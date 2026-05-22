@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react'; // Force reload
 import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, PlusCircle, Users, Receipt, TrendingUp, Calculator, DatabaseBackup, X } from 'lucide-react';
 

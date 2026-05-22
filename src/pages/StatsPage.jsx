@@ -117,7 +117,7 @@ export default function StatsPage() {
   }, [maxAmount, graphHeight]);
 
   return (
-    <div className="stats-page animate-fade-in" style={{ paddingBottom: '2rem' }}>
+    <div className="stats-page animate-fade-in" style={{ paddingBottom: '2rem', width: '100%', minWidth: 0 }}>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '2rem' }}>
         <div>
           <h2 className="page-title">Statistics</h2>
@@ -147,43 +147,43 @@ export default function StatsPage() {
       <div className="summary-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
         {/* Metric 1 */}
         <div className="card summary-card" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', padding: '1.5rem' }}>
-          <div className="summary-card-icon" style={{ backgroundColor: '#ecfdf5', color: '#10b981', padding: '1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="summary-card-icon" style={{ backgroundColor: 'var(--color-success-subtle)', color: 'var(--color-success)', padding: '1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Landmark size={24} />
           </div>
           <div>
-            <span className="summary-card-label" style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500, display: 'block', marginBottom: '0.25rem' }}>Total Spend (12 Months)</span>
-            <span className="summary-card-value" style={{ fontSize: '1.65rem', fontWeight: 700, color: '#1e293b' }}>Rs. {summaryStats.totalSpend.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="summary-card-label" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500, display: 'block', marginBottom: '0.25rem' }}>Total Spend (12 Months)</span>
+            <span className="summary-card-value" style={{ fontSize: '1.65rem', fontWeight: 700, color: 'var(--text-primary)' }}>Rs. {summaryStats.totalSpend.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
 
         {/* Metric 2 */}
         <div className="card summary-card" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', padding: '1.5rem' }}>
-          <div className="summary-card-icon" style={{ backgroundColor: '#eff6ff', color: '#3b82f6', padding: '1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="summary-card-icon" style={{ backgroundColor: 'var(--color-info-subtle)', color: 'var(--color-info)', padding: '1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <TrendingUp size={24} />
           </div>
           <div>
-            <span className="summary-card-label" style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500, display: 'block', marginBottom: '0.25rem' }}>Average Monthly Spend</span>
-            <span className="summary-card-value" style={{ fontSize: '1.65rem', fontWeight: 700, color: '#1e293b' }}>Rs. {summaryStats.averageSpend.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="summary-card-label" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500, display: 'block', marginBottom: '0.25rem' }}>Average Monthly Spend</span>
+            <span className="summary-card-value" style={{ fontSize: '1.65rem', fontWeight: 700, color: 'var(--text-primary)' }}>Rs. {summaryStats.averageSpend.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
 
         {/* Metric 3 */}
         <div className="card summary-card" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', padding: '1.5rem' }}>
-          <div className="summary-card-icon" style={{ backgroundColor: '#fff7ed', color: '#f97316', padding: '1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="summary-card-icon" style={{ backgroundColor: 'var(--color-warning-subtle)', color: 'var(--color-warning)', padding: '1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Award size={24} />
           </div>
           <div>
-            <span className="summary-card-label" style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500, display: 'block', marginBottom: '0.25rem' }}>Peak Spending Month</span>
-            <span className="summary-card-value" style={{ fontSize: '1.65rem', fontWeight: 700, color: '#1e293b' }}>{summaryStats.highestMonth.label}</span>
-            <span style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginTop: '0.1rem' }}>Rs. {summaryStats.highestMonth.amount.toFixed(2)}</span>
+            <span className="summary-card-label" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500, display: 'block', marginBottom: '0.25rem' }}>Peak Spending Month</span>
+            <span className="summary-card-value" style={{ fontSize: '1.65rem', fontWeight: 700, color: 'var(--text-primary)' }}>{summaryStats.highestMonth.label}</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginTop: '0.1rem' }}>Rs. {summaryStats.highestMonth.amount.toFixed(2)}</span>
           </div>
         </div>
       </div>
 
       {/* SVG Chart Container */}
-      <div className="card" style={{ padding: '2rem' }}>
-        <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: '#1e293b', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Calendar size={20} style={{ color: '#10b981' }} /> 12-Month Expenditure Line Graph
+      <div className="card" style={{ padding: '2rem', width: '100%', overflow: 'hidden' }}>
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Calendar size={20} style={{ color: 'var(--color-primary)' }} /> 12-Month Expenditure Line Graph
         </h3>
 
         {summaryStats.totalSpend === 0 ? (
