@@ -25,7 +25,7 @@ export const generatePDFReport = (providers, entries, monthlyPayments) => {
 
     const dateObj = new Date(e.date);
     const year = dateObj.getFullYear();
-    const month = dateObj.getMonth() + 1; // 1-12
+    const month = dateObj.getMonth(); // 0-indexed to match app's payment key format
     const amount = parseFloat(e.total_amount || e.totalAmount || 0);
 
     const key = `${pId}_${year}_${month}`;
@@ -57,7 +57,7 @@ export const generatePDFReport = (providers, entries, monthlyPayments) => {
 
   for (const [key, data] of Object.entries(monthlyTotals)) {
     const providerName = providers.find(p => p.id === data.providerId)?.name || 'Unknown';
-    const monthName = new Date(data.year, data.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+    const monthName = new Date(data.year, data.month).toLocaleString('default', { month: 'long', year: 'numeric' });
     
     // Check if paid in monthlyPayments
     const paymentRecord = monthlyPayments[key] || {};
