@@ -1,29 +1,37 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 export default function Modal({ isOpen, onClose, title, children, footer, size = 'md' }) {
-  // size: 'sm' | 'md' | 'lg'
-  // When isOpen, render modal-overlay > modal with modal-header, modal-body, modal-footer
-  // Close on Escape key press
-  // Close on overlay click (not on modal content click)
-  // Prevent body scroll when open
-  
+  const [isReady, setIsReady] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
       window.addEventListener('keydown', handleEsc);
+      
+      // Prevent mobile phantom clicks from instantly closing the modal
+      const timer = setTimeout(() => setIsReady(true), 150);
+      
       return () => {
         document.body.style.overflow = '';
         window.removeEventListener('keydown', handleEsc);
+        clearTimeout(timer);
+        setIsReady(false);
       };
     }
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
+  return createPortal(
+    <div 
+      className="modal-overlay" 
+      onPointerDown={(e) => {
+        if (isReady && e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className={`modal modal-${size}`} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{title}</h3>
@@ -32,6 +40,7 @@ export default function Modal({ isOpen, onClose, title, children, footer, size =
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-footer">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
