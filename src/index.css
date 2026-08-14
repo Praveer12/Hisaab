@@ -127,6 +127,48 @@
   --z-toast:     400;
 }
 
+/* ── Light Mode Variables ── */
+[data-theme="light"] {
+  --bg-base: hsl(220, 10%, 98%);
+  --bg-surface: hsl(0, 0%, 100%);
+  --bg-surface-raised: hsl(220, 10%, 96%);
+  --bg-surface-overlay: hsl(220, 10%, 94%);
+  --bg-surface-hover: hsl(220, 10%, 92%);
+
+  --glass-bg: hsla(0, 0%, 100%, 0.85);
+  --glass-bg-heavy: hsla(0, 0%, 100%, 0.95);
+  --glass-border: hsla(0, 0%, 0%, 0.08);
+  --glass-border-light: hsla(0, 0%, 0%, 0.04);
+
+  --text-primary: hsl(220, 25%, 15%);
+  --text-secondary: hsl(220, 15%, 40%);
+  --text-tertiary: hsl(220, 15%, 55%);
+  --text-disabled: hsl(220, 15%, 70%);
+  --text-inverse: hsl(0, 0%, 100%);
+
+  --shadow-sm: 0 1px 2px hsla(220,25%,15%,0.05);
+  --shadow-md: 0 4px 6px hsla(220,25%,15%,0.05), 0 2px 4px hsla(220,25%,15%,0.03);
+  --shadow-lg: 0 10px 15px hsla(220,25%,15%,0.05), 0 4px 6px hsla(220,25%,15%,0.03);
+  --shadow-xl: 0 20px 25px hsla(220,25%,15%,0.05), 0 8px 10px hsla(220,25%,15%,0.03);
+  
+  --color-primary-glow: hsla(152, 68%, 45%, 0.15);
+}
+
+[data-theme="light"] body {
+  background-image: none;
+}
+
+[data-theme="light"] .stat-value {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .sidebar-logo-text {
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--color-primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 
 /* ============================================================
    RESET & BASE
@@ -4238,4 +4280,105 @@ button:focus-visible,
   min-width: 0;
   max-width: 100vw;
   overflow-x: hidden;
+}
+
+/* ============================================================
+   MOBILE RESPONSIVENESS & BOTTOM NAV
+   ============================================================ */
+@media (max-width: 768px) {
+  .app-layout {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    transform: translateX(-100%);
+    width: 280px;
+  }
+  
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+  
+  .main-content {
+    margin-left: 0;
+    padding-bottom: 75px; /* space for bottom nav */
+  }
+  
+  .header {
+    padding: 0 var(--space-4);
+  }
+  
+  .content-area {
+    padding: var(--space-4);
+  }
+  
+  .hamburger {
+    display: flex;
+  }
+  
+  /* Bottom Navigation */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 65px;
+    background: var(--glass-bg-heavy);
+    backdrop-filter: blur(var(--glass-blur-heavy));
+    -webkit-backdrop-filter: blur(var(--glass-blur-heavy));
+    border-top: 1px solid var(--glass-border-light);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: var(--z-modal);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary);
+    text-decoration: none;
+    font-size: 10px;
+    font-weight: var(--font-medium);
+    gap: 4px;
+    flex: 1;
+    height: 100%;
+    transition: all var(--transition-fast);
+  }
+  
+  .bottom-nav-item.active {
+    color: var(--color-primary);
+  }
+  
+  .bottom-nav-item-icon {
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .bottom-nav-item.add-btn {
+    position: relative;
+    top: -15px;
+  }
+  
+  .bottom-nav-item.add-btn .bottom-nav-item-icon {
+    background: var(--color-primary);
+    color: white;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-glow-primary);
+    font-size: 24px;
+  }
+  
+  .bottom-nav-item.add-btn span {
+    margin-top: 4px;
+  }
 }
