@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import Layout from './components/Layout/Layout';
+import InstallPrompt from './components/UI/InstallPrompt';
 import DashboardPage from './pages/DashboardPage';
 import ProvidersPage from './pages/ProvidersPage';
 import EntryPage from './pages/EntryPage';
@@ -26,6 +27,7 @@ function App() {
           </Routes>
         </Layout>
       </Router>
+      <InstallPrompt />
     </AppProvider>
   );
 }

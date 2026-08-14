@@ -2614,6 +2614,124 @@ input, select, textarea, button {
 
 
 /* ============================================================
+   PWA INSTALL PROMPT BANNER
+   ============================================================ */
+.install-prompt-banner {
+  position: fixed;
+  bottom: calc(var(--bottom-nav-height) + 12px);
+  left: var(--space-3);
+  right: var(--space-3);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-float);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  z-index: calc(var(--z-bottom-nav) + 5);
+  animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.install-prompt-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+}
+
+.install-prompt-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.install-prompt-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.install-prompt-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.install-prompt-desc {
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.install-prompt-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.install-prompt-btn {
+  padding: 0.375rem 0.875rem;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.install-prompt-btn:hover {
+  background: var(--color-primary-dark);
+}
+
+.install-prompt-btn:active {
+  transform: scale(0.96);
+}
+
+.install-prompt-close {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.install-prompt-close:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-secondary);
+}
+
+@media (min-width: 769px) {
+  .install-prompt-banner {
+    bottom: var(--space-5);
+    left: auto;
+    right: var(--space-5);
+    max-width: 360px;
+  }
+}
+
+
+/* ============================================================
    MOBILE RESPONSIVE FINE-TUNING
    ============================================================ */
 @media (max-width: 400px) {
