@@ -1,11 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, TrendingUp, Clock } from 'lucide-react';
+import { Plus, Clock, ArrowRight } from 'lucide-react';
 import MonthlyCalendar from '../components/Calendar/MonthlyCalendar';
 import SummaryCards from '../components/Dashboard/SummaryCards';
 import Button from '../components/UI/Button';
 import { useApp } from '../context/AppContext';
-import { formatDisplayDate } from '../utils/dateHelpers';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -46,7 +45,7 @@ export default function DashboardPage() {
       <div className="page-header">
         <div>
           <h2 className="page-title">Dashboard</h2>
-          <p className="page-subtitle">Track your daily milk deliveries</p>
+          <p className="page-subtitle">Your milk delivery overview</p>
         </div>
         <Button variant="primary" icon={Plus} onClick={() => navigate('/entry')}>
           Add Entry
@@ -83,15 +82,14 @@ export default function DashboardPage() {
         <div className="dashboard-recent-section">
           <div className="section-header">
             <h3 className="section-title">
-              <Clock size={20} />
+              <Clock size={18} />
               Recent Entries
             </h3>
           </div>
           
           {recentEntries.length === 0 ? (
             <div className="empty-state empty-state-small">
-              <TrendingUp size={32} />
-              <p>No entries yet</p>
+              <p>No entries yet. Start tracking!</p>
               <Button variant="primary" size="sm" onClick={() => navigate('/entry')}>
                 Add First Entry
               </Button>

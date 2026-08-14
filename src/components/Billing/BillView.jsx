@@ -61,13 +61,13 @@ export default function BillView({ entries, providers, year, month, providerId }
             <tr>
               <th>Date</th>
               <th>Provider</th>
-              <th>Morning (L)</th>
-              <th>Evening (L)</th>
-              <th>Total Milk (L)</th>
-              <th>Rate (₹)</th>
-              <th>Milk Amt (₹)</th>
-              <th>Paper (₹)</th>
-              <th>Total (₹)</th>
+              <th>Morning</th>
+              <th>Evening</th>
+              <th>Total</th>
+              <th>Rate</th>
+              <th>Milk ₹</th>
+              <th>Paper ₹</th>
+              <th>Total ₹</th>
             </tr>
           </thead>
           <tbody>
@@ -114,38 +114,68 @@ export default function BillView({ entries, providers, year, month, providerId }
           </div>
         </div>
 
-        <div className="bill-payment-breakdown" style={{ marginTop: '2rem', padding: '1.25rem', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#f8fafc' }}>
-          <h5 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.05rem', fontWeight: 600, color: '#1e293b' }}>
-            💰 Monthly Payment Status
+        {/* Payment Status */}
+        <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'var(--bg-surface-raised)', borderRadius: '12px' }}>
+          <h5 style={{ margin: '0 0 0.75rem 0', fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+            💰 Payment Status
           </h5>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
             <button
               type="button"
-              className={`btn ${paymentInfo.status === 'Pending' ? 'btn-danger' : 'btn-outline'}`}
-              style={{ padding: '0.5rem 1.25rem', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: 500 }}
               onClick={() => updateMonthlyPayment(providerId, year, month, { ...paymentInfo, status: 'Pending' })}
+              style={{
+                padding: '0.4rem 1rem',
+                borderRadius: '9999px',
+                border: 'none',
+                background: paymentInfo.status === 'Pending' ? '#EF4444' : '#F1F5F9',
+                color: paymentInfo.status === 'Pending' ? '#FFFFFF' : '#64748B',
+                fontWeight: 600,
+                fontSize: '0.8125rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                fontFamily: 'inherit',
+              }}
             >
               Pending
             </button>
             <button
               type="button"
-              className={`btn ${paymentInfo.status === 'Paid' ? 'btn-success' : 'btn-outline'}`}
-              style={{ padding: '0.5rem 1.25rem', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: 500 }}
               onClick={() => updateMonthlyPayment(providerId, year, month, { ...paymentInfo, status: 'Paid' })}
+              style={{
+                padding: '0.4rem 1rem',
+                borderRadius: '9999px',
+                border: 'none',
+                background: paymentInfo.status === 'Paid' ? '#10B981' : '#F1F5F9',
+                color: paymentInfo.status === 'Paid' ? '#FFFFFF' : '#64748B',
+                fontWeight: 600,
+                fontSize: '0.8125rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                fontFamily: 'inherit',
+              }}
             >
-              Paid
+              ✓ Paid
             </button>
 
             {paymentInfo.status === 'Paid' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto' }}>
-                <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 500 }}>Payment Method:</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginLeft: 'auto', flexWrap: 'wrap' }}>
                 {['Cash', 'UPI', 'Bank Transfer'].map(method => (
                   <button
                     key={method}
                     type="button"
-                    className={`btn btn-sm ${paymentInfo.method === method ? 'btn-primary' : 'btn-outline'}`}
-                    style={{ padding: '0.35rem 0.75rem', borderRadius: '4px', fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.15s' }}
                     onClick={() => updateMonthlyPayment(providerId, year, month, { ...paymentInfo, method })}
+                    style={{
+                      padding: '0.3rem 0.625rem',
+                      borderRadius: '8px',
+                      border: paymentInfo.method === method ? '1.5px solid #0D9488' : '1.5px solid #E2E8F0',
+                      background: paymentInfo.method === method ? '#F0FDFA' : '#FFFFFF',
+                      color: paymentInfo.method === method ? '#0D9488' : '#94A3B8',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                      fontFamily: 'inherit',
+                    }}
                   >
                     {method}
                   </button>

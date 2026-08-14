@@ -1,31 +1,51 @@
 import React from 'react';
-import { Menu, Sun, Moon } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return { text: 'Good Morning', emoji: '🌅' };
+  if (hour < 17) return { text: 'Good Afternoon', emoji: '☀️' };
+  if (hour < 21) return { text: 'Good Evening', emoji: '🌇' };
+  return { text: 'Good Night', emoji: '🌙' };
+}
+
 const pageTitles = {
-  '/': 'Dashboard',
+  '/': null,
   '/entry': 'Add Entry',
   '/providers': 'Providers',
   '/billing': 'Billing',
+  '/stats': 'Statistics',
+  '/calculator': 'Calculator',
+  '/backup': 'Backup',
 };
 
-export default function Header({ onMenuClick, theme, toggleTheme }) {
+export default function Header() {
   const location = useLocation();
+  const greeting = getGreeting();
+  const isHome = location.pathname === '/';
   const title = pageTitles[location.pathname] || 'Hisaab';
+  
+  const dateStr = new Date().toLocaleDateString('en-IN', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
   
   return (
     <header className="header">
-      <button className="btn btn-icon header-menu hamburger" onClick={onMenuClick}>
-        <Menu size={24} />
-      </button>
-      <h2 className="header-title">{title}</h2>
-      <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <button className="btn btn-icon" onClick={toggleTheme} title="Toggle Theme">
-          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
-        <span className="header-date mobile-hidden">{new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
+      {isHome ? (
+        <div className="header-greeting">
+          <span className="header-greeting-text">
+            {greeting.text} {greeting.emoji}
+          </span>
+          <span className="header-greeting-name">Hisaab</span>
+        </div>
+      ) : (
+        <h2 className="header-title">{title}</h2>
+      )}
+      <div className="header-right">
+        <span className="header-date">{dateStr}</span>
       </div>
-      <style>{`@media (max-width: 768px) { .mobile-hidden { display: none !important; } }`}</style>
     </header>
   );
 }

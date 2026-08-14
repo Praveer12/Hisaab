@@ -12,7 +12,6 @@ export default function BillingPage() {
   const [month, setMonth] = useState(now.getMonth());
   const [selectedProviderId, setSelectedProviderId] = useState(providers[0]?.id || '');
   
-  // Keep selected provider in sync
   React.useEffect(() => {
     if (providers.length > 0 && (!selectedProviderId || !providers.some(p => p.id === selectedProviderId))) {
       setSelectedProviderId(providers[0].id);
@@ -39,11 +38,11 @@ export default function BillingPage() {
       <div className="page-header">
         <div>
           <h2 className="page-title">Billing</h2>
-          <p className="page-subtitle">View and download monthly bills</p>
+          <p className="page-subtitle">Monthly bills & payments</p>
         </div>
       </div>
       
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.25rem' }}>
         {/* Month Navigator */}
         <div className="month-navigator" style={{ margin: 0 }}>
           <button className="btn btn-icon" onClick={handlePrev}>
@@ -55,20 +54,30 @@ export default function BillingPage() {
           </button>
         </div>
 
-        {/* Provider Selector */}
+        {/* Provider Selector as chips */}
         {providers.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <label className="form-label" style={{ marginBottom: 0, fontWeight: 500 }}>Provider:</label>
-            <select
-              className="form-select"
-              style={{ width: 'auto', minWidth: '180px', padding: '0.5rem 2rem 0.5rem 1rem' }}
-              value={selectedProviderId}
-              onChange={(e) => setSelectedProviderId(e.target.value)}
-            >
-              {providers.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {providers.map(p => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setSelectedProviderId(p.id)}
+                style={{
+                  padding: '0.4rem 0.875rem',
+                  borderRadius: '9999px',
+                  border: selectedProviderId === p.id ? '1.5px solid #0D9488' : '1.5px solid #E2E8F0',
+                  background: selectedProviderId === p.id ? '#F0FDFA' : '#FFFFFF',
+                  color: selectedProviderId === p.id ? '#0D9488' : '#64748B',
+                  fontWeight: 600,
+                  fontSize: '0.8125rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  fontFamily: 'inherit',
+                }}
+              >
+                {p.name}
+              </button>
+            ))}
           </div>
         )}
       </div>

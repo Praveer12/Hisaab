@@ -264,15 +264,15 @@ export default function BulkEntryForm({ providers, onSubmit, onCancel }) {
 
       {/* Live Preview Box */}
       {totalDaysCount > 0 && (
-        <div className="calc-display" style={{ display: 'block', padding: '1.25rem', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', color: '#166534', marginTop: '1.5rem', marginBottom: '1.5rem' }}>
-          <h5 style={{ margin: '0 0 0.5rem 0', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <div className="calc-display" style={{ display: 'block', padding: '1rem', backgroundColor: 'var(--color-primary-bg)', border: '1px solid rgba(13, 148, 136, 0.15)', borderRadius: '12px', color: 'var(--color-primary-dark)', marginTop: '1rem', marginBottom: '1rem' }}>
+          <h5 style={{ margin: '0 0 0.5rem 0', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8125rem' }}>
             <Info size={16} /> Bulk Entry Preview
           </h5>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.9rem' }}>
-            <div>Total Days in Range: <strong>{totalDaysCount} days</strong></div>
-            <div>Daily Subtotal: <strong>₹{(singleDayMilkAmount + singleDayNewspaperRate).toFixed(2)}</strong></div>
-            <div>Total Milk Volume: <strong>{estimatedTotalMilk.toFixed(1)} L</strong></div>
-            <div style={{ color: '#15803d', fontSize: '1rem' }}>Estimated Total Cost: <strong>₹{estimatedTotalAmount.toFixed(2)}</strong></div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.375rem', fontSize: '0.8125rem' }}>
+            <div>Days: <strong>{totalDaysCount}</strong></div>
+            <div>Daily: <strong>₹{(singleDayMilkAmount + singleDayNewspaperRate).toFixed(2)}</strong></div>
+            <div>Total Milk: <strong>{estimatedTotalMilk.toFixed(1)} L</strong></div>
+            <div style={{ color: 'var(--color-primary)', fontWeight: 700 }}>Total: <strong>₹{estimatedTotalAmount.toFixed(2)}</strong></div>
           </div>
         </div>
       )}

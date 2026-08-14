@@ -1,4 +1,4 @@
-import React from 'react'; // Force reload
+import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, PlusCircle, Users, Receipt, TrendingUp, Calculator, DatabaseBackup, X } from 'lucide-react';
 
@@ -7,21 +7,19 @@ const navItems = [
   { path: '/entry', label: 'Add Entry', icon: PlusCircle },
   { path: '/providers', label: 'Providers', icon: Users },
   { path: '/billing', label: 'Billing', icon: Receipt },
-  { path: '/stats', label: 'Stats', icon: TrendingUp },
+  { path: '/stats', label: 'Statistics', icon: TrendingUp },
   { path: '/calculator', label: 'Calculator', icon: Calculator },
   { path: '/backup', label: 'Backup', icon: DatabaseBackup },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
-  const location = useLocation();
-  
   return (
     <>
       {isOpen && <div className="sidebar-overlay" onClick={onClose} />}
       <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-logo">
-            <span className="logo-icon">📒</span>
+            <span className="logo-icon">🥛</span>
             <h1 className="logo-text">Hisaab</h1>
           </div>
           <button className="btn btn-icon sidebar-close" onClick={onClose}>

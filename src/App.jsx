@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import Layout from './components/Layout/Layout';
@@ -11,19 +11,10 @@ import CalculatorPage from './pages/CalculatorPage';
 import BackupPage from './pages/BackupPage';
 
 function App() {
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-
   return (
     <AppProvider>
       <Router>
-        <Layout theme={theme} toggleTheme={toggleTheme}>
+        <Layout>
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/providers" element={<ProvidersPage />} />

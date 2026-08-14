@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { CalendarDays, ArrowLeft, Edit, Trash2 } from 'lucide-react';
+import { CalendarDays, Edit, Trash2 } from 'lucide-react';
 import DailyEntryForm from '../components/Entry/DailyEntryForm';
 import BulkEntryForm from '../components/Entry/BulkEntryForm';
 import Button from '../components/UI/Button';
@@ -17,9 +17,8 @@ export default function EntryPage() {
   const today = formatDate(new Date());
   const [selectedDate, setSelectedDate] = useState(dateParam || today);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [entryMode, setEntryMode] = useState('single'); // 'single' or 'bulk'
+  const [entryMode, setEntryMode] = useState('single');
   
-  // Check if entry exists for selected date
   const existingEntry = useMemo(
     () => getEntryByDate(selectedDate),
     [selectedDate, entries, getEntryByDate]
@@ -27,7 +26,6 @@ export default function EntryPage() {
   
   const [isEditing, setIsEditing] = useState(!existingEntry);
   
-  // Update isEditing when existingEntry changes
   React.useEffect(() => {
     setIsEditing(!existingEntry);
   }, [existingEntry]);
@@ -100,9 +98,8 @@ export default function EntryPage() {
           <p className="page-subtitle">{formatDisplayDate(selectedDate)}</p>
         </div>
         <div className="page-header-actions">
-          {/* Date Selector */}
           <div className="date-selector">
-            <label className="form-label" htmlFor="entry-date-picker">Select Date</label>
+            <label className="form-label" htmlFor="entry-date-picker">Date</label>
             <input
               id="entry-date-picker"
               type="date"
@@ -116,7 +113,6 @@ export default function EntryPage() {
       </div>
       
       {existingEntry && !isEditing ? (
-        /* View Mode */
         <div className="entry-view card">
           <div className="entry-view-header">
             <h3>Entry for {formatDisplayDate(selectedDate)}</h3>
@@ -183,43 +179,46 @@ export default function EntryPage() {
           </div>
         </div>
       ) : (
-        /* Edit/Add Mode */
         <div className="card">
           {!existingEntry && (
-            <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: '1.5rem', gap: '1.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
               <button
                 type="button"
                 onClick={() => setEntryMode('single')}
                 style={{
-                  padding: '0.75rem 0.5rem',
-                  fontSize: '0.95rem',
+                  flex: 1,
+                  padding: '0.625rem 0.75rem',
+                  fontSize: '0.8125rem',
                   fontWeight: 600,
                   cursor: 'pointer',
                   border: 'none',
-                  background: 'none',
-                  color: entryMode === 'single' ? '#10b981' : '#64748b',
-                  borderBottom: entryMode === 'single' ? '2px solid #10b981' : '2px solid transparent',
+                  borderRadius: '10px',
+                  fontFamily: 'inherit',
                   transition: 'all 0.2s',
+                  background: entryMode === 'single' ? '#0D9488' : '#F1F5F9',
+                  color: entryMode === 'single' ? '#FFFFFF' : '#64748B',
                 }}
               >
-                📅 Daily Single Entry
+                📅 Single Entry
               </button>
               <button
                 type="button"
                 onClick={() => setEntryMode('bulk')}
                 style={{
-                  padding: '0.75rem 0.5rem',
-                  fontSize: '0.95rem',
+                  flex: 1,
+                  padding: '0.625rem 0.75rem',
+                  fontSize: '0.8125rem',
                   fontWeight: 600,
                   cursor: 'pointer',
                   border: 'none',
-                  background: 'none',
-                  color: entryMode === 'bulk' ? '#10b981' : '#64748b',
-                  borderBottom: entryMode === 'bulk' ? '2px solid #10b981' : '2px solid transparent',
+                  borderRadius: '10px',
+                  fontFamily: 'inherit',
                   transition: 'all 0.2s',
+                  background: entryMode === 'bulk' ? '#0D9488' : '#F1F5F9',
+                  color: entryMode === 'bulk' ? '#FFFFFF' : '#64748B',
                 }}
               >
-                🔄 Bulk Date Range Entry
+                🔄 Bulk Entry
               </button>
             </div>
           )}
@@ -242,7 +241,6 @@ export default function EntryPage() {
         </div>
       )}
       
-      {/* Delete Confirmation Modal */}
       <Modal
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
