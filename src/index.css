@@ -1108,30 +1108,26 @@ input, select, textarea, button {
 .summary-cards-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
-  margin-bottom: var(--space-5);
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
 }
 
 .summary-card {
   background: var(--bg-surface);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-xs);
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
   transition: all var(--transition-fast);
 }
 
-.summary-card:first-child {
-  grid-column: 1 / -1;
-  padding: var(--space-5);
-}
-
 .summary-card-icon {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -1139,18 +1135,15 @@ input, select, textarea, button {
   flex-shrink: 0;
 }
 
-.summary-card:first-child .summary-card-icon {
-  width: 48px;
-  height: 48px;
-}
-
 .summary-card-content {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .summary-card-value {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 800;
   color: var(--text-primary);
   line-height: 1.2;
@@ -1158,19 +1151,15 @@ input, select, textarea, button {
   animation: countUp 0.5s ease forwards;
 }
 
-.summary-card:first-child .summary-card-value {
-  font-size: 1.625rem;
-}
-
 .summary-card-label {
   font-size: 0.75rem;
   color: var(--text-secondary);
   font-weight: 500;
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
 .summary-card-subtitle {
-  font-size: 0.6875rem;
+  font-size: 0.65rem;
   color: var(--text-tertiary);
   font-weight: 500;
 }
@@ -2628,9 +2617,6 @@ input, select, textarea, button {
    MOBILE RESPONSIVE FINE-TUNING
    ============================================================ */
 @media (max-width: 400px) {
-  .summary-cards-grid {
-    grid-template-columns: 1fr;
-  }
 
   .backup-stats-grid {
     grid-template-columns: 1fr;

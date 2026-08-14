@@ -62,7 +62,7 @@ export default function SummaryCards({ entries, year, month }) {
       {cards.map((card, idx) => (
         <div key={idx} className={`summary-card summary-card-${card.color}`}>
           <div className="summary-card-icon">
-            <card.icon size={24} />
+            <card.icon size={20} />
           </div>
           <div className="summary-card-content">
             <p className="summary-card-value">{card.value}</p>
