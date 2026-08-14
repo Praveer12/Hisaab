@@ -1,13 +1,10 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react';
-import { Download, Upload, Database, Trash2, ShieldCheck, AlertTriangle, Check, HardDrive } from 'lucide-react';
+import React, { useMemo, useCallback } from 'react';
+import { Download, FileText, Database, ShieldCheck, HardDrive } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { generatePDFReport } from '../utils/pdfExport';
 
 export default function BackupPage() {
-  const { entries, providers, monthlyPayments } = useApp();
-  const fileInputRef = useRef(null);
-  const [importStatus, setImportStatus] = useState(null); // 'success' | 'error' | null
-  const [importMessage, setImportMessage] = useState('');
-  const [showConfirmClear, setShowConfirmClear] = useState(false);
+  const { entries, providers, monthlyPayments, showToast } = useApp();
 
   // Data stats
   const stats = useMemo(() => {
@@ -30,99 +27,55 @@ export default function BackupPage() {
     };
   }, [entries, providers, monthlyPayments]);
 
-  // ── Export ──
-  const handleExport = useCallback(() => {
-    const backupData = {
-      _app: 'Hisaab',
-      _version: '1.0',
-      _exportedAt: new Date().toISOString(),
-      providers: JSON.parse(localStorage.getItem('doodhbook_providers') || '[]'),
-      entries: JSON.parse(localStorage.getItem('doodhbook_entries') || '[]'),
-      monthlyPayments: JSON.parse(localStorage.getItem('doodhbook_monthly_payments') || '{}'),
-    };
+  // ── JSON Export ──
+  const handleJSONExport = useCallback(() => {
+    try {
+      const backupData = {
+        _app: 'Hisaab',
+        _version: '2.0',
+        _exportedAt: new Date().toISOString(),
+        providers: providers,
+        entries: entries,
+        monthlyPayments: monthlyPayments,
+      };
 
-    const json = JSON.stringify(backupData, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
+      const json = JSON.stringify(backupData, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
 
-    const a = document.createElement('a');
-    const date = new Date().toISOString().slice(0, 10);
-    a.href = url;
-    a.download = `Hisaab_Backup_${date}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, []);
+      const a = document.createElement('a');
+      const date = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `Hisaab_Backup_${date}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      showToast('JSON backup downloaded successfully!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to export JSON backup', 'error');
+    }
+  }, [providers, entries, monthlyPayments, showToast]);
 
-  // ── Import ──
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = useCallback((e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = JSON.parse(event.target.result);
-
-        // Validate structure
-        if (!data.providers || !data.entries) {
-          throw new Error('Invalid backup file — missing providers or entries.');
-        }
-
-        if (!Array.isArray(data.providers) || !Array.isArray(data.entries)) {
-          throw new Error('Invalid backup file — providers and entries must be arrays.');
-        }
-
-        // Restore data
-        localStorage.setItem('doodhbook_providers', JSON.stringify(data.providers));
-        localStorage.setItem('doodhbook_entries', JSON.stringify(data.entries));
-        if (data.monthlyPayments && typeof data.monthlyPayments === 'object') {
-          localStorage.setItem('doodhbook_monthly_payments', JSON.stringify(data.monthlyPayments));
-        }
-
-        setImportStatus('success');
-        setImportMessage(
-          `Restored ${data.providers.length} providers, ${data.entries.length} entries successfully! Reloading...`
-        );
-
-        // Reload to pick up new data
-        setTimeout(() => window.location.reload(), 1500);
-      } catch (err) {
-        setImportStatus('error');
-        setImportMessage(err.message || 'Failed to read backup file.');
-      }
-    };
-
-    reader.onerror = () => {
-      setImportStatus('error');
-      setImportMessage('Failed to read the file.');
-    };
-
-    reader.readAsText(file);
-    // Reset so same file can be selected again
-    e.target.value = '';
-  }, []);
-
-  // ── Clear All Data ──
-  const handleClearData = useCallback(() => {
-    localStorage.removeItem('doodhbook_providers');
-    localStorage.removeItem('doodhbook_entries');
-    localStorage.removeItem('doodhbook_monthly_payments');
-    setShowConfirmClear(false);
-    window.location.reload();
-  }, []);
+  // ── PDF Export ──
+  const handlePDFExport = useCallback(() => {
+    try {
+      showToast('Generating PDF Report...', 'success');
+      generatePDFReport(providers, entries, monthlyPayments);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to generate PDF', 'error');
+    }
+  }, [providers, entries, monthlyPayments, showToast]);
 
   return (
-    <div className="backup-page animate-fade-in">
+    <div className="backup-page animate-fade-in pb-24">
       <div className="page-header">
         <div>
-          <h2 className="page-title">Data Backup</h2>
-          <p className="page-subtitle">Export, import, or manage your app data</p>
+          <h2 className="page-title">Export Data</h2>
+          <p className="page-subtitle">Download your records as PDF or JSON</p>
         </div>
       </div>
 
@@ -163,87 +116,39 @@ export default function BackupPage() {
             style={{ width: `${Math.max(1, stats.capacityPercent)}%` }}
           />
         </div>
+        <p className="text-xs text-[var(--text-secondary)] mt-2 text-center">
+          Data is safely synced and stored in the cloud.
+        </p>
       </div>
 
       {/* Action Cards */}
-      <div className="backup-actions-grid">
-        {/* Export */}
+      <div className="backup-actions-grid mt-6">
+        {/* PDF Export */}
+        <div className="backup-action-card">
+          <div className="backup-action-icon backup-action-export" style={{ background: 'var(--color-primary-bg)', color: 'var(--color-primary)' }}>
+            <FileText size={28} />
+          </div>
+          <h3>Export as PDF</h3>
+          <p>Download a printable PDF report containing your providers, monthly payments, and daily entries.</p>
+          <button className="btn backup-export-btn w-full" onClick={handlePDFExport}>
+            <FileText size={18} />
+            Generate PDF
+          </button>
+        </div>
+
+        {/* JSON Export */}
         <div className="backup-action-card">
           <div className="backup-action-icon backup-action-export">
             <Download size={28} />
           </div>
-          <h3>Export Data</h3>
-          <p>Download all your data as a JSON backup file. Keep it safe on your phone or cloud drive.</p>
-          <button className="btn backup-export-btn" onClick={handleExport}>
+          <h3>Export as JSON</h3>
+          <p>Download a raw data backup file in JSON format for safekeeping or developer use.</p>
+          <button className="btn backup-export-btn w-full" onClick={handleJSONExport}>
             <Download size={18} />
-            Download Backup
+            Download JSON
           </button>
-        </div>
-
-        {/* Import */}
-        <div className="backup-action-card">
-          <div className="backup-action-icon backup-action-import">
-            <Upload size={28} />
-          </div>
-          <h3>Import Data</h3>
-          <p>Restore data from a previously exported backup file. This will replace your current data.</p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json"
-            style={{ display: 'none' }}
-            onChange={handleFileChange}
-          />
-          <button className="btn backup-import-btn" onClick={handleImportClick}>
-            <Upload size={18} />
-            Upload Backup
-          </button>
-        </div>
-
-        {/* Clear */}
-        <div className="backup-action-card">
-          <div className="backup-action-icon backup-action-danger">
-            <Trash2 size={28} />
-          </div>
-          <h3>Clear All Data</h3>
-          <p>Permanently delete all entries, providers, and payment records. This cannot be undone.</p>
-          {!showConfirmClear ? (
-            <button
-              className="btn backup-clear-btn"
-              onClick={() => setShowConfirmClear(true)}
-            >
-              <Trash2 size={18} />
-              Clear Data
-            </button>
-          ) : (
-            <div className="backup-confirm-row">
-              <button className="btn backup-confirm-yes" onClick={handleClearData}>
-                Yes, Delete Everything
-              </button>
-              <button
-                className="btn backup-confirm-no"
-                onClick={() => setShowConfirmClear(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          )}
         </div>
       </div>
-
-      {/* Import Status Toast */}
-      {importStatus && (
-        <div className={`backup-toast backup-toast-${importStatus}`}>
-          {importStatus === 'success' ? <Check size={20} /> : <AlertTriangle size={20} />}
-          <span>{importMessage}</span>
-          <button
-            className="backup-toast-close"
-            onClick={() => setImportStatus(null)}
-          >
-            ×
-          </button>
-        </div>
-      )}
     </div>
   );
 }
