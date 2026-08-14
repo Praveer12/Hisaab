@@ -1,292 +1,323 @@
 import React, { createContext, useContext, useCallback, useState, useEffect } from 'react';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { supabase } from '../lib/supabase';
 import { generateId } from '../utils/dateHelpers';
 
 const AppContext = createContext(null);
 
-// ─── Toast helpers ──────────────────────────────────────────────────────────
-
 let toastCounter = 0;
-const TOAST_DURATION = 3000; // auto-dismiss after 3 seconds
-
-// ─── Provider Component ─────────────────────────────────────────────────────
+const TOAST_DURATION = 3000;
 
 export function AppProvider({ children }) {
-  // ── Persisted state ────────────────────────────────────────────────────────
-  const [providers, setProviders] = useLocalStorage('doodhbook_providers', []);
-  const [entries, setEntries] = useLocalStorage('doodhbook_entries', []);
-  const [monthlyPayments, setMonthlyPayments] = useLocalStorage('doodhbook_monthly_payments', {});
-
-  // ── Toasts (ephemeral, not persisted) ──────────────────────────────────────
+  // ── State ──────────────────────────────────────────────────────────────────
+  const [providers, setProviders] = useState([]);
+  const [entries, setEntries] = useState([]);
+  const [monthlyPayments, setMonthlyPayments] = useState({});
+  const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState([]);
 
+  // ── Toasts ─────────────────────────────────────────────────────────────────
   const showToast = useCallback((message, type = 'success') => {
     const id = ++toastCounter;
     setToasts((prev) => [...prev, { id, message, type }]);
-
-    // Auto-remove after duration
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, TOAST_DURATION);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), TOAST_DURATION);
   }, []);
 
+  // ── Fetch Initial Data ─────────────────────────────────────────────────────
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [provRes, entRes, payRes] = await Promise.all([
+          supabase.from('providers').select('*').order('created_at', { ascending: true }),
+          supabase.from('entries').select('*').order('date', { ascending: false }),
+          supabase.from('monthly_payments').select('*')
+        ]);
+
+        if (provRes.error) throw provRes.error;
+        if (entRes.error) throw entRes.error;
+        if (payRes.error) throw payRes.error;
+
+        // Map Providers
+        const mappedProviders = provRes.data.map(p => ({
+          id: p.id,
+          name: p.name,
+          contact: p.contact || '',
+          ratePerLitre: Number(p.rate_per_litre),
+          address: p.address || '',
+          isActive: p.is_active,
+          createdAt: p.created_at
+        }));
+        setProviders(mappedProviders);
+
+        // Map Entries
+        const mappedEntries = entRes.data.map(e => ({
+          id: e.id,
+          date: e.date,
+          providerId: e.provider_id,
+          milk: {
+            morning: Number(e.milk_morning),
+            evening: Number(e.milk_evening),
+            ratePerLitre: Number(e.milk_rate),
+            totalAmount: Number(e.milk_total)
+          },
+          newspaper: {
+            taken: e.newspaper_taken,
+            name: '', // Removed from DB schema to simplify
+            rate: Number(e.newspaper_rate)
+          },
+          totalAmount: Number(e.total_amount),
+          paymentMethod: e.payment_method,
+          notes: e.notes || '',
+          createdAt: e.created_at,
+          updatedAt: e.updated_at
+        }));
+        setEntries(mappedEntries);
+
+        // Map Payments to dict
+        const paymentsDict = {};
+        payRes.data.forEach(p => {
+          paymentsDict[`${p.provider_id}_${p.year}_${p.month}`] = {
+            status: p.status,
+            method: p.method
+          };
+        });
+        setMonthlyPayments(paymentsDict);
+
+      } catch (error) {
+        console.error('Error fetching from Supabase:', error);
+        showToast('Error loading data from server', 'error');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [showToast]);
+
   // ── Provider CRUD ──────────────────────────────────────────────────────────
+  const addProvider = useCallback(async (providerData) => {
+    const newId = generateId(); // We can still generate UUID client-side for immediate UI update
+    const dbPayload = {
+      id: newId,
+      name: providerData.name || '',
+      contact: providerData.contact || '',
+      rate_per_litre: parseFloat(providerData.ratePerLitre) || 0,
+      address: providerData.address || '',
+      is_active: providerData.isActive !== undefined ? providerData.isActive : true,
+    };
 
-  const addProvider = useCallback(
-    (providerData) => {
-      const newProvider = {
-        id: generateId(),
-        name: providerData.name || '',
-        contact: providerData.contact || '',
-        ratePerLitre: parseFloat(providerData.ratePerLitre) || 0,
-        address: providerData.address || '',
-        isActive: providerData.isActive !== undefined ? providerData.isActive : true,
-        createdAt: new Date().toISOString(),
-      };
-      setProviders((prev) => [...prev, newProvider]);
-      return newProvider;
-    },
-    [setProviders]
-  );
+    // Optimistic UI update
+    const uiPayload = {
+      id: dbPayload.id,
+      name: dbPayload.name,
+      contact: dbPayload.contact,
+      ratePerLitre: dbPayload.rate_per_litre,
+      address: dbPayload.address,
+      isActive: dbPayload.is_active,
+      createdAt: new Date().toISOString()
+    };
+    setProviders(prev => [...prev, uiPayload]);
 
-  const updateProvider = useCallback(
-    (id, updates) => {
-      setProviders((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
-      );
-    },
-    [setProviders]
-  );
+    const { error } = await supabase.from('providers').insert([dbPayload]);
+    if (error) {
+      console.error(error);
+      showToast('Error saving provider', 'error');
+      // Ideally rollback here in a prod app
+    }
+    return uiPayload;
+  }, [showToast]);
 
-  const deleteProvider = useCallback(
-    (id) => {
-      setProviders((prev) => prev.filter((p) => p.id !== id));
-      // Also remove all entries associated with this provider
-      setEntries((prev) => prev.filter((e) => e.providerId !== id));
-    },
-    [setProviders, setEntries]
-  );
+  const updateProvider = useCallback(async (id, updates) => {
+    setProviders(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)));
 
-  const getProvider = useCallback(
-    (id) => providers.find((p) => p.id === id) || null,
-    [providers]
-  );
+    const dbPayload = {};
+    if (updates.name !== undefined) dbPayload.name = updates.name;
+    if (updates.contact !== undefined) dbPayload.contact = updates.contact;
+    if (updates.ratePerLitre !== undefined) dbPayload.rate_per_litre = parseFloat(updates.ratePerLitre) || 0;
+    if (updates.address !== undefined) dbPayload.address = updates.address;
+    if (updates.isActive !== undefined) dbPayload.is_active = updates.isActive;
+
+    if (Object.keys(dbPayload).length > 0) {
+      const { error } = await supabase.from('providers').update(dbPayload).eq('id', id);
+      if (error) showToast('Error updating provider', 'error');
+    }
+  }, [showToast]);
+
+  const deleteProvider = useCallback(async (id) => {
+    setProviders(prev => prev.filter(p => p.id !== id));
+    setEntries(prev => prev.filter(e => e.providerId !== id));
+
+    const { error } = await supabase.from('providers').delete().eq('id', id);
+    if (error) showToast('Error deleting provider', 'error');
+  }, [showToast]);
+
+  const getProvider = useCallback((id) => providers.find(p => p.id === id) || null, [providers]);
 
   // ── Entry CRUD ─────────────────────────────────────────────────────────────
+  const _formatEntryForDB = (entryData, id) => {
+    const morning = parseFloat(entryData.milk?.morning) || 0;
+    const evening = parseFloat(entryData.milk?.evening) || 0;
+    const rate = parseFloat(entryData.milk?.ratePerLitre) || 0;
+    const milkTotalAmount = parseFloat(((morning + evening) * rate).toFixed(2));
+    const newspaperTaken = !!entryData.newspaper?.taken;
+    const newspaperRate = newspaperTaken ? parseFloat(entryData.newspaper?.rate) || 0 : 0;
+    const totalAmount = parseFloat((milkTotalAmount + newspaperRate).toFixed(2));
 
-  const addEntry = useCallback(
-    (entryData) => {
-      const morning = parseFloat(entryData.milk?.morning) || 0;
-      const evening = parseFloat(entryData.milk?.evening) || 0;
-      const rate = parseFloat(entryData.milk?.ratePerLitre) || 0;
-      const milkTotalAmount = parseFloat(((morning + evening) * rate).toFixed(2));
+    return {
+      id: id || generateId(),
+      date: entryData.date,
+      provider_id: entryData.providerId,
+      milk_morning: morning,
+      milk_evening: evening,
+      milk_rate: rate,
+      milk_total: milkTotalAmount,
+      newspaper_taken: newspaperTaken,
+      newspaper_rate: newspaperRate,
+      total_amount: totalAmount,
+      payment_method: entryData.paymentMethod || 'Pending',
+      notes: entryData.notes || ''
+    };
+  };
 
-      const newspaperTaken = !!entryData.newspaper?.taken;
-      const newspaperRate = newspaperTaken
-        ? parseFloat(entryData.newspaper?.rate) || 0
-        : 0;
-
-      const totalAmount = parseFloat((milkTotalAmount + newspaperRate).toFixed(2));
-
-      const newEntry = {
-        id: generateId(),
-        date: entryData.date || '',
-        providerId: entryData.providerId || '',
-        milk: {
-          morning,
-          evening,
-          ratePerLitre: rate,
-          totalAmount: milkTotalAmount,
-        },
-        newspaper: {
-          taken: newspaperTaken,
-          name: entryData.newspaper?.name || '',
-          rate: parseFloat(entryData.newspaper?.rate) || 0,
-        },
-        paymentMethod: entryData.paymentMethod || 'Pending',
-        totalAmount,
-        notes: entryData.notes || '',
-        createdAt: new Date().toISOString(),
-      };
-
-      setEntries((prev) => [...prev, newEntry]);
-      return newEntry;
+  const _formatEntryForUI = (dbPayload) => ({
+    id: dbPayload.id,
+    date: dbPayload.date,
+    providerId: dbPayload.provider_id,
+    milk: {
+      morning: dbPayload.milk_morning,
+      evening: dbPayload.milk_evening,
+      ratePerLitre: dbPayload.milk_rate,
+      totalAmount: dbPayload.milk_total
     },
-    [setEntries]
-  );
-
-  const updateEntry = useCallback(
-    (id, updates) => {
-      setEntries((prev) =>
-        prev.map((e) => {
-          if (e.id !== id) return e;
-
-          const merged = { ...e, ...updates };
-
-          // Recalculate milk total if milk fields were updated
-          if (updates.milk) {
-            const milk = { ...e.milk, ...updates.milk };
-            const morning = parseFloat(milk.morning) || 0;
-            const evening = parseFloat(milk.evening) || 0;
-            const rate = parseFloat(milk.ratePerLitre) || 0;
-            milk.totalAmount = parseFloat(((morning + evening) * rate).toFixed(2));
-            merged.milk = milk;
-          }
-
-          // Recalculate total amount
-          const milkAmt = parseFloat(merged.milk?.totalAmount) || 0;
-          const paperAmt = merged.newspaper?.taken
-            ? parseFloat(merged.newspaper?.rate) || 0
-            : 0;
-          merged.totalAmount = parseFloat((milkAmt + paperAmt).toFixed(2));
-
-          return merged;
-        })
-      );
+    newspaper: {
+      taken: dbPayload.newspaper_taken,
+      rate: dbPayload.newspaper_rate
     },
-    [setEntries]
-  );
+    totalAmount: dbPayload.total_amount,
+    paymentMethod: dbPayload.payment_method,
+    notes: dbPayload.notes,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
 
-  const deleteEntry = useCallback(
-    (id) => {
-      setEntries((prev) => prev.filter((e) => e.id !== id));
-    },
-    [setEntries]
-  );
+  const addEntry = useCallback(async (entryData) => {
+    const dbPayload = _formatEntryForDB(entryData);
+    const uiPayload = _formatEntryForUI(dbPayload);
+    setEntries(prev => [...prev, uiPayload]);
 
-  const saveBulkEntries = useCallback(
-    (newEntriesData) => {
-      setEntries((prev) => {
-        let updated = [...prev];
-        newEntriesData.forEach((entryData) => {
-          const morning = parseFloat(entryData.milk?.morning) || 0;
-          const evening = parseFloat(entryData.milk?.evening) || 0;
-          const rate = parseFloat(entryData.milk?.ratePerLitre) || 0;
-          const milkTotalAmount = parseFloat(((morning + evening) * rate).toFixed(2));
+    const { error } = await supabase.from('entries').insert([dbPayload]);
+    if (error) showToast('Error saving entry', 'error');
+    return uiPayload;
+  }, [showToast]);
 
-          const newspaperTaken = !!entryData.newspaper?.taken;
-          const newspaperRate = newspaperTaken
-            ? parseFloat(entryData.newspaper?.rate) || 0
-            : 0;
+  const updateEntry = useCallback(async (id, updates) => {
+    // We fetch the current entry to merge updates accurately for DB
+    setEntries(prev => {
+      const existing = prev.find(e => e.id === id);
+      if (!existing) return prev;
+      
+      const mergedUI = { ...existing, ...updates };
+      if (updates.milk) mergedUI.milk = { ...existing.milk, ...updates.milk };
+      if (updates.newspaper) mergedUI.newspaper = { ...existing.newspaper, ...updates.newspaper };
+      
+      const uiPayload = _formatEntryForUI(_formatEntryForDB(mergedUI, id));
+      uiPayload.createdAt = existing.createdAt;
 
-          const totalAmount = parseFloat((milkTotalAmount + newspaperRate).toFixed(2));
-
-          const entryPayload = {
-            date: entryData.date || '',
-            providerId: entryData.providerId || '',
-            milk: {
-              morning,
-              evening,
-              ratePerLitre: rate,
-              totalAmount: milkTotalAmount,
-            },
-            newspaper: {
-              taken: newspaperTaken,
-              name: entryData.newspaper?.name || '',
-              rate: parseFloat(entryData.newspaper?.rate) || 0,
-            },
-            paymentMethod: entryData.paymentMethod || 'Pending',
-            totalAmount,
-            notes: entryData.notes || '',
-            updatedAt: new Date().toISOString(),
-          };
-
-          // Find if there is an existing entry for this date and provider
-          const existingIndex = updated.findIndex(
-            (e) => e.date === entryPayload.date && e.providerId === entryPayload.providerId
-          );
-
-          if (existingIndex !== -1) {
-            updated[existingIndex] = {
-              ...updated[existingIndex],
-              ...entryPayload,
-              id: updated[existingIndex].id,
-              createdAt: updated[existingIndex].createdAt || new Date().toISOString(),
-            };
-          } else {
-            updated.push({
-              id: generateId(),
-              createdAt: new Date().toISOString(),
-              ...entryPayload,
-            });
-          }
-        });
-        return updated;
+      // Async DB call
+      supabase.from('entries').update({
+        milk_morning: uiPayload.milk.morning,
+        milk_evening: uiPayload.milk.evening,
+        milk_rate: uiPayload.milk.ratePerLitre,
+        milk_total: uiPayload.milk.totalAmount,
+        newspaper_taken: uiPayload.newspaper.taken,
+        newspaper_rate: uiPayload.newspaper.rate,
+        total_amount: uiPayload.totalAmount,
+        payment_method: uiPayload.paymentMethod,
+        notes: uiPayload.notes,
+        updated_at: new Date().toISOString()
+      }).eq('id', id).then(({error}) => {
+        if(error) showToast('Error updating entry', 'error');
       });
-    },
-    [setEntries]
-  );
 
-  const getEntry = useCallback(
-    (id) => entries.find((e) => e.id === id) || null,
-    [entries]
-  );
+      return prev.map(e => e.id === id ? uiPayload : e);
+    });
+  }, [showToast]);
 
-  const getEntriesByMonth = useCallback(
-    (year, month) => {
-      const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
-      return entries.filter((e) => e.date && e.date.startsWith(prefix));
-    },
-    [entries]
-  );
+  const deleteEntry = useCallback(async (id) => {
+    setEntries(prev => prev.filter(e => e.id !== id));
+    const { error } = await supabase.from('entries').delete().eq('id', id);
+    if (error) showToast('Error deleting entry', 'error');
+  }, [showToast]);
 
-  const getEntryByDate = useCallback(
-    (dateStr) => entries.find((e) => e.date === dateStr) || null,
-    [entries]
-  );
+  const saveBulkEntries = useCallback(async (newEntriesData) => {
+    // Separate into inserts and updates
+    setEntries(prev => {
+      let updatedUI = [...prev];
+      const dbUpserts = [];
 
-  const updateMonthlyPayment = useCallback(
-    (providerId, year, month, paymentData) => {
-      const key = `${providerId}_${year}_${month}`;
-      setMonthlyPayments((prev) => ({
-        ...prev,
-        [key]: paymentData, // e.g. { status: 'Paid', method: 'UPI' } or { status: 'Pending' }
-      }));
-    },
-    [setMonthlyPayments]
-  );
+      newEntriesData.forEach(entryData => {
+        const dbPayload = _formatEntryForDB(entryData);
+        const existingIndex = updatedUI.findIndex(e => e.date === dbPayload.date && e.providerId === dbPayload.provider_id);
+        
+        if (existingIndex !== -1) {
+          dbPayload.id = updatedUI[existingIndex].id;
+          const uiPayload = _formatEntryForUI(dbPayload);
+          uiPayload.createdAt = updatedUI[existingIndex].createdAt;
+          updatedUI[existingIndex] = uiPayload;
+        } else {
+          updatedUI.push(_formatEntryForUI(dbPayload));
+        }
+        dbUpserts.push(dbPayload);
+      });
+
+      // Async upsert to DB
+      supabase.from('entries').upsert(dbUpserts, { onConflict: 'id' }).then(({error}) => {
+        if (error) showToast('Error saving bulk entries', 'error');
+      });
+
+      return updatedUI;
+    });
+  }, [showToast]);
+
+  const getEntry = useCallback((id) => entries.find(e => e.id === id) || null, [entries]);
+  const getEntriesByMonth = useCallback((year, month) => {
+    const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+    return entries.filter(e => e.date && e.date.startsWith(prefix));
+  }, [entries]);
+  const getEntryByDate = useCallback((dateStr) => entries.find(e => e.date === dateStr) || null, [entries]);
+
+  // ── Monthly Payments ───────────────────────────────────────────────────────
+  const updateMonthlyPayment = useCallback(async (providerId, year, month, paymentData) => {
+    const key = `${providerId}_${year}_${month}`;
+    setMonthlyPayments(prev => ({ ...prev, [key]: paymentData }));
+
+    const { error } = await supabase.from('monthly_payments').upsert({
+      provider_id: providerId,
+      year,
+      month,
+      status: paymentData.status,
+      method: paymentData.method
+    }, { onConflict: 'provider_id,year,month' });
+
+    if (error) {
+      console.error(error);
+      showToast('Error saving payment status', 'error');
+    }
+  }, [showToast]);
 
   // ── Context value ──────────────────────────────────────────────────────────
-
   const value = {
-    // Providers
-    providers,
-    addProvider,
-    updateProvider,
-    deleteProvider,
-    getProvider,
-
-    // Entries
-    entries,
-    addEntry,
-    updateEntry,
-    deleteEntry,
-    saveBulkEntries,
-    getEntry,
-    getEntriesByMonth,
-    getEntryByDate,
-
-    // Monthly Payments
-    monthlyPayments,
-    updateMonthlyPayment,
-
-    // Toasts
-    toasts,
-    showToast,
+    loading,
+    providers, addProvider, updateProvider, deleteProvider, getProvider,
+    entries, addEntry, updateEntry, deleteEntry, saveBulkEntries, getEntry, getEntriesByMonth, getEntryByDate,
+    monthlyPayments, updateMonthlyPayment,
+    toasts, showToast,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
-/**
- * Convenience hook to consume the App context.
- * Throws if used outside of <AppProvider>.
- */
 export function useApp() {
   const ctx = useContext(AppContext);
-  if (!ctx) {
-    throw new Error('useApp must be used within an <AppProvider>');
-  }
+  if (!ctx) throw new Error('useApp must be used within an <AppProvider>');
   return ctx;
 }
 
