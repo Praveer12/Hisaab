@@ -1,8 +1,39 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Plus, Receipt, Menu } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Users, Plus, Receipt, MoreHorizontal, TrendingUp, Calculator, DatabaseBackup } from 'lucide-react';
 
-export default function BottomNav({ onMenuClick }) {
+const moreItems = [
+  { path: '/stats', label: 'Statistics', icon: TrendingUp, color: '#8B5CF6' },
+  { path: '/calculator', label: 'Calculator', icon: Calculator, color: '#0EA5E9' },
+  { path: '/backup', label: 'Backup', icon: DatabaseBackup, color: '#F97316' },
+];
+
+export default function BottomNav() {
+  const [showMore, setShowMore] = useState(false);
+  const moreRef = useRef(null);
+  const navigate = useNavigate();
+
+  // Close popup on outside click
+  useEffect(() => {
+    if (!showMore) return;
+    const handleClick = (e) => {
+      if (moreRef.current && !moreRef.current.contains(e.target)) {
+        setShowMore(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('touchstart', handleClick);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('touchstart', handleClick);
+    };
+  }, [showMore]);
+
+  const handleMoreItemClick = (path) => {
+    setShowMore(false);
+    navigate(path);
+  };
+
   return (
     <nav className="bottom-nav">
       <NavLink to="/" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`} end>
@@ -25,10 +56,31 @@ export default function BottomNav({ onMenuClick }) {
         <span>Bills</span>
       </NavLink>
       
-      <button className="bottom-nav-item" onClick={onMenuClick}>
-        <div className="bottom-nav-item-icon"><Menu size={20} /></div>
-        <span>More</span>
-      </button>
+      <div className="bottom-nav-more-wrapper" ref={moreRef}>
+        {showMore && (
+          <div className="bottom-nav-popup">
+            {moreItems.map(item => (
+              <button
+                key={item.path}
+                className="bottom-nav-popup-item"
+                onClick={() => handleMoreItemClick(item.path)}
+              >
+                <div className="bottom-nav-popup-icon" style={{ background: item.color + '15', color: item.color }}>
+                  <item.icon size={18} />
+                </div>
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        <button
+          className={`bottom-nav-item ${showMore ? 'active' : ''}`}
+          onClick={() => setShowMore(prev => !prev)}
+        >
+          <div className="bottom-nav-item-icon"><MoreHorizontal size={20} /></div>
+          <span>More</span>
+        </button>
+      </div>
     </nav>
   );
 }
