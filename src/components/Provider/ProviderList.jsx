@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Edit, Trash2, Phone, MapPin, IndianRupee, User } from 'lucide-react';
+import { Edit, Trash2, Phone, MapPin, IndianRupee, User, Truck } from 'lucide-react';
 import Button from '../UI/Button';
 import Card from '../UI/Card';
 import Modal from '../UI/Modal';
 
-export default function ProviderList({ providers, onEdit, onDelete }) {
+export default function ProviderList({ providers, onEdit, onDelete, currentProviderId, onSetCurrent }) {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   if (providers.length === 0) {
@@ -20,38 +20,57 @@ export default function ProviderList({ providers, onEdit, onDelete }) {
   return (
     <>
       <div className="provider-grid">
-        {providers.map(provider => (
-          <Card key={provider.id} className={`provider-card ${provider.isActive ? 'active' : ''}`}>
-            <div className="provider-card-header">
-              <h3 className="provider-name">{provider.name}</h3>
-              <span className={`provider-badge ${provider.isActive ? 'badge-active' : 'badge-inactive'}`}>
-                {provider.isActive ? 'Active' : 'Inactive'}
-              </span>
-            </div>
-            <div className="provider-details">
-              {provider.contact && (
-                <div className="provider-detail-item">
-                  <Phone size={16} />
-                  <span>{provider.contact}</span>
-                </div>
-              )}
-              <div className="provider-detail-item">
-                <IndianRupee size={16} />
-                <span>₹{provider.ratePerLitre} / litre</span>
+        {providers.map(provider => {
+          const isCurrent = provider.id === currentProviderId;
+          return (
+            <Card key={provider.id} className={`provider-card ${provider.isActive ? 'active' : ''} ${isCurrent ? 'provider-current' : ''}`}>
+              <div className="provider-card-header">
+                <h3 className="provider-name">{provider.name}</h3>
+                <span className={`provider-badge ${isCurrent ? 'badge-delivering' : (provider.isActive ? 'badge-active' : 'badge-inactive')}`}>
+                  {isCurrent ? '🚚 Delivering' : (provider.isActive ? 'Active' : 'Inactive')}
+                </span>
               </div>
-              {provider.address && (
+              <div className="provider-details">
+                {provider.contact && (
+                  <div className="provider-detail-item">
+                    <Phone size={16} />
+                    <span>{provider.contact}</span>
+                  </div>
+                )}
                 <div className="provider-detail-item">
-                  <MapPin size={16} />
-                  <span>{provider.address}</span>
+                  <IndianRupee size={16} />
+                  <span>₹{provider.ratePerLitre} / litre</span>
                 </div>
-              )}
-            </div>
-            <div className="provider-actions">
-              <Button variant="secondary" size="sm" icon={Edit} onClick={() => onEdit(provider)}>Edit</Button>
-              <Button variant="danger" size="sm" icon={Trash2} onClick={() => setDeleteConfirm(provider)}>Delete</Button>
-            </div>
-          </Card>
-        ))}
+                {provider.defaultQuantity > 0 && (
+                  <div className="provider-detail-item">
+                    <Truck size={16} />
+                    <span>Default: {provider.defaultQuantity}L / day</span>
+                  </div>
+                )}
+                {provider.address && (
+                  <div className="provider-detail-item">
+                    <MapPin size={16} />
+                    <span>{provider.address}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Currently Delivering Toggle */}
+              <button
+                className={`provider-delivering-btn ${isCurrent ? 'delivering-active' : ''}`}
+                onClick={() => onSetCurrent(isCurrent ? '' : provider.id)}
+              >
+                <span className={`delivering-dot ${isCurrent ? 'dot-active' : ''}`}></span>
+                <span>{isCurrent ? 'Currently Delivering ✅' : 'Set as Delivering'}</span>
+              </button>
+
+              <div className="provider-actions">
+                <Button variant="secondary" size="sm" icon={Edit} onClick={() => onEdit(provider)}>Edit</Button>
+                <Button variant="danger" size="sm" icon={Trash2} onClick={() => setDeleteConfirm(provider)}>Delete</Button>
+              </div>
+            </Card>
+          );
+        })}
       </div>
 
       <Modal

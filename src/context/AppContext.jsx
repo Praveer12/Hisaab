@@ -42,8 +42,10 @@ export function AppProvider({ children }) {
           name: p.name,
           contact: p.contact || '',
           ratePerLitre: Number(p.rate_per_litre),
+          defaultQuantity: Number(p.default_quantity) || 0,
           address: p.address || '',
           isActive: p.is_active,
+          isCurrent: !!p.is_current,
           createdAt: p.created_at
         }));
         setProviders(mappedProviders);
@@ -100,6 +102,7 @@ export function AppProvider({ children }) {
       name: providerData.name || '',
       contact: providerData.contact || '',
       rate_per_litre: parseFloat(providerData.ratePerLitre) || 0,
+      default_quantity: parseFloat(providerData.defaultQuantity) || 0,
       address: providerData.address || '',
       is_active: providerData.isActive !== undefined ? providerData.isActive : true,
     };
@@ -110,6 +113,7 @@ export function AppProvider({ children }) {
       name: dbPayload.name,
       contact: dbPayload.contact,
       ratePerLitre: dbPayload.rate_per_litre,
+      defaultQuantity: dbPayload.default_quantity,
       address: dbPayload.address,
       isActive: dbPayload.is_active,
       createdAt: new Date().toISOString()
@@ -132,6 +136,7 @@ export function AppProvider({ children }) {
     if (updates.name !== undefined) dbPayload.name = updates.name;
     if (updates.contact !== undefined) dbPayload.contact = updates.contact;
     if (updates.ratePerLitre !== undefined) dbPayload.rate_per_litre = parseFloat(updates.ratePerLitre) || 0;
+    if (updates.defaultQuantity !== undefined) dbPayload.default_quantity = parseFloat(updates.defaultQuantity) || 0;
     if (updates.address !== undefined) dbPayload.address = updates.address;
     if (updates.isActive !== undefined) dbPayload.is_active = updates.isActive;
 
@@ -150,6 +155,39 @@ export function AppProvider({ children }) {
   }, [showToast]);
 
   const getProvider = useCallback((id) => providers.find(p => p.id === id) || null, [providers]);
+
+  // ── Current Provider (DB-backed, syncs across devices) ─────────────────────
+  const currentProvider = providers.find(p => p.isCurrent) || null;
+  const currentProviderId = currentProvider?.id || '';
+
+  const setCurrentProvider = useCallback(async (id) => {
+    // Optimistic UI: set all to false, then target to true
+    setProviders(prev => prev.map(p => ({
+      ...p,
+      isCurrent: p.id === id
+    })));
+
+    // DB: first unset all current, then set the chosen one
+    const { error: resetError } = await supabase
+      .from('providers')
+      .update({ is_current: false })
+      .eq('is_current', true); // only reset ones that are currently true
+
+    if (resetError) {
+      console.error('Error resetting current provider:', resetError);
+    }
+
+    if (id) {
+      const { error } = await supabase
+        .from('providers')
+        .update({ is_current: true })
+        .eq('id', id);
+      if (error) {
+        console.error('Error setting current provider:', error);
+        showToast('Error setting delivering provider', 'error');
+      }
+    }
+  }, [showToast]);
 
   // ── Entry CRUD ─────────────────────────────────────────────────────────────
   const _formatEntryForDB = (entryData, id) => {
@@ -307,6 +345,7 @@ export function AppProvider({ children }) {
   const value = {
     loading,
     providers, addProvider, updateProvider, deleteProvider, getProvider,
+    currentProviderId, currentProvider, setCurrentProvider,
     entries, addEntry, updateEntry, deleteEntry, saveBulkEntries, getEntry, getEntriesByMonth, getEntryByDate,
     monthlyPayments, updateMonthlyPayment,
     toasts, showToast,

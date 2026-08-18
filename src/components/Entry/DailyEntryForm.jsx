@@ -6,7 +6,7 @@ import { calculateDailyMilkAmount, calculateDailyTotal } from '../../utils/calcu
 
 const PAYMENT_METHODS = ['Cash', 'UPI', 'Bank Transfer', 'Pending'];
 
-export default function DailyEntryForm({ entry, providers, onSubmit, onCancel, selectedDate }) {
+export default function DailyEntryForm({ entry, providers, onSubmit, onCancel, selectedDate, currentProviderId }) {
   const [form, setForm] = useState({
     providerId: '',
     morningQty: '',
@@ -34,12 +34,16 @@ export default function DailyEntryForm({ entry, providers, onSubmit, onCancel, s
         paymentMethod: entry.paymentMethod || 'Cash',
         notes: entry.notes || '',
       });
-    } else if (providers.length === 1) {
-      setForm(prev => ({
-        ...prev,
-        providerId: providers[0].id,
-        ratePerLitre: providers[0].ratePerLitre.toString(),
-      }));
+    } else {
+      // Auto-select: currentProvider first, then single provider fallback
+      const autoProvider = providers.find(p => p.id === currentProviderId) || (providers.length === 1 ? providers[0] : null);
+      if (autoProvider) {
+        setForm(prev => ({
+          ...prev,
+          providerId: autoProvider.id,
+          ratePerLitre: autoProvider.ratePerLitre.toString(),
+        }));
+      }
     }
   }, [entry, providers]);
 

@@ -1,18 +1,55 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Clock, ArrowRight } from 'lucide-react';
+import { Mic, Clock, ArrowRight } from 'lucide-react';
 import MonthlyCalendar from '../components/Calendar/MonthlyCalendar';
 import SummaryCards from '../components/Dashboard/SummaryCards';
+import QuickEntryModal from '../components/Entry/QuickEntryModal';
+import VoiceEntry from '../components/Entry/VoiceEntry';
 import Button from '../components/UI/Button';
 import { useApp } from '../context/AppContext';
+import { formatDate } from '../utils/dateHelpers';
+
+const LAST_PROMPT_KEY = 'doodhbook_last_prompt_date';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { entries, providers, getEntriesByMonth } = useApp();
+  const { entries, providers, loading, currentProvider, getEntriesByMonth, addEntry, showToast, getEntryByDate } = useApp();
   
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
+  
+  // Quick Entry Modal state
+  const [showQuickEntry, setShowQuickEntry] = useState(false);
+  const [quickEntryDate, setQuickEntryDate] = useState(null);
+  
+  // Voice Entry ref
+  const voiceRef = useRef(null);
+
+  // Auto-popup: show "Aaj doodh aaya?" on first app open of the day
+  useEffect(() => {
+    if (loading || providers.length === 0) return; // Wait for data to load
+
+    const today = formatDate(new Date());
+    const lastPromptDate = localStorage.getItem(LAST_PROMPT_KEY);
+    
+    if (lastPromptDate === today) return; // Already prompted today
+
+    // Mark as prompted for today (regardless of whether user fills entry or not)
+    localStorage.setItem(LAST_PROMPT_KEY, today);
+
+    // Check if today already has an entry
+    const todayEntry = getEntryByDate(today);
+    if (todayEntry) return; // Already has entry, no need to prompt
+
+    // Small delay so the dashboard renders first
+    const timer = setTimeout(() => {
+      setQuickEntryDate(today);
+      setShowQuickEntry(true);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [loading, providers, entries, getEntryByDate]);
   
   const monthEntries = useMemo(
     () => getEntriesByMonth(year, month),
@@ -32,7 +69,25 @@ export default function DashboardPage() {
   };
   
   const handleDateClick = (dateStr) => {
-    navigate(`/entry?date=${dateStr}`);
+    const existing = getEntryByDate(dateStr);
+    if (existing) {
+      // Has entry — go to detail/edit page
+      navigate(`/entry?date=${dateStr}`);
+    } else {
+      // No entry — open quick entry modal
+      setQuickEntryDate(dateStr);
+      setShowQuickEntry(true);
+    }
+  };
+
+  const handleAddEntryClick = () => {
+    setQuickEntryDate(formatDate(new Date()));
+    setShowQuickEntry(true);
+  };
+
+  const handleQuickSave = async (entryData) => {
+    await addEntry(entryData);
+    showToast('Entry saved! ✅', 'success');
   };
   
   const getProviderName = (providerId) => {
@@ -47,9 +102,10 @@ export default function DashboardPage() {
           <h2 className="page-title">Dashboard</h2>
           <p className="page-subtitle">Your milk delivery overview</p>
         </div>
-        <Button variant="primary" icon={Plus} onClick={() => navigate('/entry')}>
-          Add Entry
-        </Button>
+        <button className="voice-header-btn" onClick={() => voiceRef.current?.start()}>
+          <Mic size={18} />
+          <span>Voice Entry</span>
+        </button>
       </div>
       
       <SummaryCards entries={monthEntries} year={year} month={month} />
@@ -70,11 +126,11 @@ export default function DashboardPage() {
             </div>
             <div className="legend-item">
               <span className="legend-dot legend-missed"></span>
-              <span>Missed</span>
+              <span>Absent</span>
             </div>
             <div className="legend-item">
               <span className="legend-dot legend-no-data"></span>
-              <span>No Data</span>
+              <span>Upcoming</span>
             </div>
           </div>
         </div>
@@ -90,7 +146,7 @@ export default function DashboardPage() {
           {recentEntries.length === 0 ? (
             <div className="empty-state empty-state-small">
               <p>No entries yet. Start tracking!</p>
-              <Button variant="primary" size="sm" onClick={() => navigate('/entry')}>
+              <Button variant="primary" size="sm" onClick={handleAddEntryClick}>
                 Add First Entry
               </Button>
             </div>
@@ -126,6 +182,40 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Quick Entry Modal */}
+      <QuickEntryModal
+        isOpen={showQuickEntry}
+        onClose={() => setShowQuickEntry(false)}
+        date={quickEntryDate}
+        providers={providers}
+        currentProvider={currentProvider}
+        onSave={handleQuickSave}
+      />
+
+      {/* Voice Entry */}
+      <VoiceEntry
+        ref={voiceRef}
+        currentProvider={currentProvider}
+        onSave={({ quantity, provider }) => {
+          const today = formatDate(new Date());
+          addEntry({
+            date: today,
+            providerId: provider.id,
+            milk: {
+              morning: quantity,
+              evening: 0,
+              ratePerLitre: provider.ratePerLitre,
+              totalAmount: quantity * provider.ratePerLitre,
+            },
+            newspaper: { taken: false, name: '', rate: 0 },
+            paymentMethod: 'Pending',
+            totalAmount: quantity * provider.ratePerLitre,
+            notes: 'Voice entry 🎤',
+          });
+          showToast(`${quantity}L entry saved! 🎤`, 'success');
+        }}
+      />
     </div>
   );
 }

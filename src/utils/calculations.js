@@ -153,11 +153,6 @@ export function getDeliveryStatus(entries = [], year, month) {
     }
   }
 
-  // Determine first and last delivery dates (sorted lexicographically)
-  const sortedDeliveryDates = [...entryDates].sort();
-  const firstDelivery = sortedDeliveryDates[0] || null;
-  const lastDelivery = sortedDeliveryDates[sortedDeliveryDates.length - 1] || null;
-
   for (const dateStr of allDates) {
     // Future dates are always 'no-data'
     if (isFutureDate(dateStr)) {
@@ -167,15 +162,9 @@ export function getDeliveryStatus(entries = [], year, month) {
 
     if (entryDates.has(dateStr)) {
       statusMap.set(dateStr, 'delivered');
-    } else if (
-      firstDelivery &&
-      lastDelivery &&
-      dateStr >= firstDelivery &&
-      dateStr <= lastDelivery
-    ) {
-      statusMap.set(dateStr, 'missed');
     } else {
-      statusMap.set(dateStr, 'no-data');
+      // Any past/today date without entry = missed (red dot)
+      statusMap.set(dateStr, 'missed');
     }
   }
 

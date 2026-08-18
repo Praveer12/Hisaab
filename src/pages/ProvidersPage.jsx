@@ -7,7 +7,7 @@ import Modal from '../components/UI/Modal';
 import { useApp } from '../context/AppContext';
 
 export default function ProvidersPage() {
-  const { providers, addProvider, updateProvider, deleteProvider, showToast } = useApp();
+  const { providers, addProvider, updateProvider, deleteProvider, showToast, currentProviderId, setCurrentProvider } = useApp();
   const [showForm, setShowForm] = useState(false);
   const [editingProvider, setEditingProvider] = useState(null);
   
@@ -32,6 +32,16 @@ export default function ProvidersPage() {
   const handleDelete = (id) => {
     deleteProvider(id);
     showToast('Provider deleted', 'success');
+  };
+
+  const handleSetCurrent = (id) => {
+    setCurrentProvider(id);
+    if (id) {
+      const p = providers.find(p => p.id === id);
+      showToast(`${p?.name || 'Provider'} set as delivering 🚚`, 'success');
+    } else {
+      showToast('Delivering provider cleared', 'success');
+    }
   };
   
   const handleCancel = () => {
@@ -59,6 +69,8 @@ export default function ProvidersPage() {
         providers={providers}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        currentProviderId={currentProviderId}
+        onSetCurrent={handleSetCurrent}
       />
       
       <Modal

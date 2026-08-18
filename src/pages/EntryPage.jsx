@@ -11,7 +11,7 @@ import { formatDate, formatDisplayDate } from '../utils/dateHelpers';
 export default function EntryPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { providers, entries, addEntry, updateEntry, deleteEntry, saveBulkEntries, getEntryByDate, showToast } = useApp();
+  const { providers, entries, addEntry, updateEntry, deleteEntry, saveBulkEntries, getEntryByDate, showToast, currentProviderId } = useApp();
   
   const dateParam = searchParams.get('date');
   const today = formatDate(new Date());
@@ -230,12 +230,14 @@ export default function EntryPage() {
               onSubmit={handleSubmit}
               onCancel={handleCancel}
               selectedDate={selectedDate}
+              currentProviderId={currentProviderId}
             />
           ) : (
             <BulkEntryForm
               providers={providers}
               onSubmit={handleBulkSubmit}
               onCancel={handleCancel}
+              currentProviderId={currentProviderId}
             />
           )}
         </div>

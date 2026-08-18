@@ -7,6 +7,7 @@ export default function ProviderForm({ provider, onSubmit, onCancel }) {
     name: '',
     contact: '',
     ratePerLitre: '',
+    defaultQuantity: '',
     address: '',
   });
   const [errors, setErrors] = useState({});
@@ -17,6 +18,7 @@ export default function ProviderForm({ provider, onSubmit, onCancel }) {
         name: provider.name || '',
         contact: provider.contact || '',
         ratePerLitre: provider.ratePerLitre?.toString() || '',
+        defaultQuantity: provider.defaultQuantity?.toString() || '',
         address: provider.address || '',
       });
     }
@@ -37,6 +39,7 @@ export default function ProviderForm({ provider, onSubmit, onCancel }) {
       name: form.name.trim(),
       contact: form.contact.trim(),
       ratePerLitre: parseFloat(form.ratePerLitre),
+      defaultQuantity: parseFloat(form.defaultQuantity) || 0,
       address: form.address.trim(),
       isActive: true,
     });
@@ -84,6 +87,19 @@ export default function ProviderForm({ provider, onSubmit, onCancel }) {
           />
           {errors.ratePerLitre && <p className="form-error">{errors.ratePerLitre}</p>}
         </div>
+      </div>
+      <div className="form-group">
+        <label className="form-label">Default Daily Quantity (L)</label>
+        <input
+          className="form-input"
+          type="number"
+          step="0.25"
+          min="0"
+          placeholder="e.g. 1.5 (for quick entry)"
+          value={form.defaultQuantity}
+          onChange={e => handleChange('defaultQuantity', e.target.value)}
+        />
+        <p className="form-hint">Set karo toh "Aaj doodh aaya?" mein auto-fill hoga</p>
       </div>
       <div className="form-group">
         <label className="form-label">Address</label>

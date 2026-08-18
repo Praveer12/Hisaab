@@ -5,18 +5,18 @@ import { useApp } from '../context/AppContext';
 import { getMonthName } from '../utils/dateHelpers';
 
 export default function BillingPage() {
-  const { entries, providers, getEntriesByMonth } = useApp();
+  const { entries, providers, getEntriesByMonth, currentProviderId } = useApp();
   
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
-  const [selectedProviderId, setSelectedProviderId] = useState(providers[0]?.id || '');
+  const [selectedProviderId, setSelectedProviderId] = useState(currentProviderId || providers[0]?.id || '');
   
   React.useEffect(() => {
     if (providers.length > 0 && (!selectedProviderId || !providers.some(p => p.id === selectedProviderId))) {
-      setSelectedProviderId(providers[0].id);
+      setSelectedProviderId(currentProviderId || providers[0].id);
     }
-  }, [providers, selectedProviderId]);
+  }, [providers, selectedProviderId, currentProviderId]);
   
   const filteredEntries = useMemo(() => {
     const monthEntries = getEntriesByMonth(year, month);

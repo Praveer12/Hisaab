@@ -3,7 +3,7 @@ import { Save, X, Info } from 'lucide-react';
 import Button from '../UI/Button';
 import { calculateDailyMilkAmount } from '../../utils/calculations';
 
-export default function BulkEntryForm({ providers, onSubmit, onCancel }) {
+export default function BulkEntryForm({ providers, onSubmit, onCancel, currentProviderId }) {
   const [form, setForm] = useState({
     startDate: '',
     endDate: '',
@@ -19,16 +19,17 @@ export default function BulkEntryForm({ providers, onSubmit, onCancel }) {
 
   const [errors, setErrors] = useState({});
 
-  // Auto-select provider if only one exists
+  // Auto-select provider: currentProvider first, then single provider fallback
   useEffect(() => {
-    if (providers.length === 1) {
+    const autoProvider = providers.find(p => p.id === currentProviderId) || (providers.length === 1 ? providers[0] : null);
+    if (autoProvider) {
       setForm((prev) => ({
         ...prev,
-        providerId: providers[0].id,
-        ratePerLitre: providers[0].ratePerLitre.toString(),
+        providerId: autoProvider.id,
+        ratePerLitre: autoProvider.ratePerLitre.toString(),
       }));
     }
-  }, [providers]);
+  }, [providers, currentProviderId]);
 
   // Update rate when provider changes
   const handleProviderChange = (providerId) => {
