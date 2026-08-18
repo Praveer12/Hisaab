@@ -97,20 +97,32 @@ const VoiceEntry = forwardRef(function VoiceEntry({ currentProvider, onSave }, r
   const [status, setStatus] = useState('idle'); // 'idle' | 'listening' | 'processing' | 'success' | 'error'
   const [statusText, setStatusText] = useState('');
   const [showOverlay, setShowOverlay] = useState(false);
+  const [interimText, setInterimText] = useState('');
   const recognitionRef = useRef(null);
+  const timeoutRef = useRef(null);
+  const processedRef = useRef(false); // prevent double-processing
 
   const isSupported = typeof window !== 'undefined' && 
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
-  const stopListening = useCallback(() => {
+  const cleanup = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      try { recognitionRef.current.stop(); } catch(e) {}
       recognitionRef.current = null;
     }
     setIsListening(false);
+    setInterimText('');
   }, []);
 
   const handleResult = useCallback((transcript) => {
+    if (processedRef.current) return;
+    processedRef.current = true;
+    cleanup();
+
     setStatus('processing');
     setStatusText(`"${transcript}"`);
 
@@ -149,59 +161,102 @@ const VoiceEntry = forwardRef(function VoiceEntry({ currentProvider, onSave }, r
     setStatus('error');
     setStatusText(`Samajh nahi aaya: "${transcript}"\nBolo: "doodh aaya" ya "nahi"`);
     setTimeout(() => { setStatus('idle'); }, 3000);
-  }, [currentProvider, onSave]);
+  }, [currentProvider, onSave, cleanup]);
 
   const startListening = useCallback(() => {
     if (!isSupported) return;
 
+    // Clean up any previous session
+    cleanup();
+    processedRef.current = false;
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     
-    recognition.lang = 'hi-IN'; // Hindi
-    recognition.interimResults = false;
+    recognition.lang = 'hi-IN';
+    recognition.interimResults = true;  // Show live text as user speaks
     recognition.maxAlternatives = 1;
-    recognition.continuous = false;
+    recognition.continuous = true;      // Keep listening, don't stop on pause
 
     recognition.onstart = () => {
       setIsListening(true);
       setStatus('listening');
       setStatusText('Bol do... 🎤');
+      setInterimText('');
       setShowOverlay(true);
     };
 
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      handleResult(transcript);
+      let finalTranscript = '';
+      let interim = '';
+      
+      for (let i = 0; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          finalTranscript += result[0].transcript;
+        } else {
+          interim += result[0].transcript;
+        }
+      }
+
+      // Show interim text live
+      if (interim) {
+        setInterimText(interim);
+        setStatusText(`Sun raha hoon... 🎤`);
+      }
+
+      // Process final result
+      if (finalTranscript) {
+        handleResult(finalTranscript.trim());
+      }
     };
 
     recognition.onerror = (event) => {
       console.error('Speech recognition error:', event.error);
-      if (event.error === 'no-speech') {
-        setStatus('error');
-        setStatusText('Kuch sunai nahi diya. Dobara try karo.');
-      } else if (event.error === 'not-allowed') {
+      // 'no-speech' and 'aborted' are common when continuous - auto-restart
+      if (event.error === 'no-speech' || event.error === 'aborted') {
+        // Don't show error, just keep trying (continuous will restart via onend)
+        return;
+      }
+      if (event.error === 'not-allowed') {
+        cleanup();
         setStatus('error');
         setStatusText('Mic permission do browser mein!');
-      } else {
-        setStatus('error');
-        setStatusText('Error aaya. Dobara try karo.');
+        setTimeout(() => { setStatus('idle'); }, 2500);
       }
-      setIsListening(false);
-      setTimeout(() => { setStatus('idle'); }, 2500);
     };
 
     recognition.onend = () => {
+      // Auto-restart if we haven't processed a result yet
+      if (!processedRef.current && recognitionRef.current) {
+        try {
+          recognition.start();
+          return;
+        } catch(e) {
+          // If restart fails, that's ok
+        }
+      }
       setIsListening(false);
       recognitionRef.current = null;
     };
 
     recognitionRef.current = recognition;
     recognition.start();
-  }, [isSupported, handleResult]);
+
+    // Auto-stop after 15 seconds
+    timeoutRef.current = setTimeout(() => {
+      if (!processedRef.current) {
+        cleanup();
+        setStatus('error');
+        setStatusText('15 sec ho gaye. Dobara try karo.');
+        setTimeout(() => { setStatus('idle'); }, 2500);
+      }
+    }, 15000);
+  }, [isSupported, handleResult, cleanup]);
 
   const handleMicClick = () => {
     if (isListening) {
-      stopListening();
+      cleanup();
       setShowOverlay(false);
       setStatus('idle');
     } else {
@@ -210,7 +265,7 @@ const VoiceEntry = forwardRef(function VoiceEntry({ currentProvider, onSave }, r
   };
 
   const handleClose = () => {
-    stopListening();
+    cleanup();
     setShowOverlay(false);
     setStatus('idle');
   };
@@ -258,6 +313,9 @@ const VoiceEntry = forwardRef(function VoiceEntry({ currentProvider, onSave }, r
             </div>
 
             <p className="voice-status-text">{statusText}</p>
+            {interimText && status === 'listening' && (
+              <p className="voice-interim-text">... {interimText} ...</p>
+            )}
 
             {status === 'idle' && (
               <button className="voice-retry-btn" onClick={startListening}>
