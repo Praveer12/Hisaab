@@ -13,7 +13,7 @@ const LAST_PROMPT_KEY = 'doodhbook_last_prompt_date';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { entries, providers, loading, currentProvider, getEntriesByMonth, addEntry, showToast, getEntryByDate } = useApp();
+  const { entries, providers, loading, currentProvider, getEntriesByMonth, addEntry, updateEntry, showToast, getEntryByDate } = useApp();
   
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -199,7 +199,8 @@ export default function DashboardPage() {
         currentProvider={currentProvider}
         onSave={({ quantity, provider }) => {
           const today = formatDate(new Date());
-          addEntry({
+          const existingEntry = getEntryByDate(today);
+          const entryData = {
             date: today,
             providerId: provider.id,
             milk: {
@@ -208,12 +209,19 @@ export default function DashboardPage() {
               ratePerLitre: provider.ratePerLitre,
               totalAmount: quantity * provider.ratePerLitre,
             },
-            newspaper: { taken: false, name: '', rate: 0 },
-            paymentMethod: 'Pending',
-            totalAmount: quantity * provider.ratePerLitre,
+            newspaper: existingEntry?.newspaper || { taken: false, name: '', rate: 0 },
+            paymentMethod: existingEntry?.paymentMethod || 'Pending',
+            totalAmount: quantity * provider.ratePerLitre + (existingEntry?.newspaper?.taken ? (existingEntry?.newspaper?.rate || 0) : 0),
             notes: 'Voice entry 🎤',
-          });
-          showToast(`${quantity}L entry saved! 🎤`, 'success');
+          };
+
+          if (existingEntry) {
+            updateEntry(existingEntry.id, entryData);
+            showToast(`${quantity}L — entry updated! 🎤`, 'success');
+          } else {
+            addEntry(entryData);
+            showToast(`${quantity}L — entry saved! 🎤`, 'success');
+          }
         }}
       />
     </div>

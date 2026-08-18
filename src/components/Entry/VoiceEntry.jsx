@@ -9,13 +9,21 @@ const HINDI_NUMBERS = {
   'do': 2, 'दो': 2, 'two': 2,
   'dhai': 2.5, 'ढाई': 2.5, 'adhai': 2.5,
   'teen': 3, 'तीन': 3, 'three': 3,
+  'char': 4, 'चार': 4, 'four': 4,
+  'paanch': 5, 'पांच': 5, 'five': 5,
+  'aadha': 0.5, 'आधा': 0.5, 'half': 0.5,
+  'paav': 0.25, 'पाव': 0.25, 'quarter': 0.25,
 };
 
 function parseVoiceCommand(transcript) {
   const text = transcript.toLowerCase().trim();
   
-  // Check for "no" responses
-  const noPatterns = ['nahi', 'nhi', 'no', 'naa', 'mat', 'nahin', 'cancel', 'band', 'नहीं', 'ना'];
+  // Check for "no" responses first
+  const noPatterns = [
+    'nahi', 'nhi', 'no', 'naa', 'mat', 'nahin', 'cancel', 'band',
+    'nahi aaya', 'nahi diya', 'aaj nahi', 'naa bhai',
+    'नहीं', 'ना', 'मत',
+  ];
   for (const pat of noPatterns) {
     if (text.includes(pat)) {
       return { action: 'no' };
@@ -26,12 +34,12 @@ function parseVoiceCommand(transcript) {
   let quantity = null;
 
   // Check for "X litre" or "X liter" patterns
-  const litreMatch = text.match(/(\d+\.?\d*)\s*(litre|liter|ltr|l\b)/i);
+  const litreMatch = text.match(/(\d+\.?\d*)\s*(litre|liter|ltr|l\b|लीटर)/i);
   if (litreMatch) {
     quantity = parseFloat(litreMatch[1]);
   }
 
-  // Check Hindi number words + litre
+  // Check Hindi number words
   if (!quantity) {
     for (const [word, val] of Object.entries(HINDI_NUMBERS)) {
       if (text.includes(word)) {
@@ -41,7 +49,7 @@ function parseVoiceCommand(transcript) {
     }
   }
 
-  // Check for plain numbers
+  // Check for plain numbers (e.g. "2", "1.5")
   if (!quantity) {
     const numMatch = text.match(/(\d+\.?\d*)/);
     if (numMatch) {
@@ -49,8 +57,26 @@ function parseVoiceCommand(transcript) {
     }
   }
 
-  // Check for "yes" / "aaya" patterns (milk came)
-  const yesPatterns = ['aaya', 'aagaya', 'aa gaya', 'haan', 'ha', 'yes', 'aai', 'आया', 'हां', 'doodh', 'milk', 'diya', 'de gaya', 'degaya'];
+  // Check for "yes" / affirmative patterns
+  const yesPatterns = [
+    // Direct milk references
+    'doodh', 'milk', 'dudh', 'दूध',
+    // Came / delivered
+    'aaya', 'aagaya', 'aa gaya', 'aai', 'aa gayi', 'आया', 'आ गया',
+    // Given / left
+    'diya', 'de gaya', 'degaya', 'de diya', 'dediya', 'deke gaya',
+    'de gaya hai', 'de gayi', 'de gayi hai', 'दिया', 'दे गया',
+    // Affirmative
+    'haan', 'ha', 'yes', 'ok', 'okay', 'haa', 'ji', 'ji haan',
+    'हां', 'हाँ', 'जी', 'जी हां',
+    // Add / save
+    'add', 'save', 'dal', 'daal', 'daaldo', 'daal do', 'dal do',
+    'add kar', 'add karo', 'add kar do', 'kar do', 'kardo',
+    'laga do', 'lagado', 'likh do', 'likhdo', 'enter',
+    'डाल दो', 'जोड़ दो', 'लिख दो',
+    // Today
+    'aaj', 'today', 'आज',
+  ];
   for (const pat of yesPatterns) {
     if (text.includes(pat)) {
       return { action: 'yes', quantity };
