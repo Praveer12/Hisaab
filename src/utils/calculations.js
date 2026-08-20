@@ -1,4 +1,4 @@
-import { getDatesInMonth, isFutureDate } from './dateHelpers';
+import { getDatesInMonth, isFutureDate, isToday } from './dateHelpers';
 
 /**
  * Calculate the total milk cost for a single day.
@@ -162,8 +162,11 @@ export function getDeliveryStatus(entries = [], year, month) {
 
     if (entryDates.has(dateStr)) {
       statusMap.set(dateStr, 'delivered');
+    } else if (isToday(dateStr)) {
+      // Today without entry = no-data (not missed until day ends)
+      statusMap.set(dateStr, 'no-data');
     } else {
-      // Any past/today date without entry = missed (red dot)
+      // Any past date without entry = missed (red dot)
       statusMap.set(dateStr, 'missed');
     }
   }
