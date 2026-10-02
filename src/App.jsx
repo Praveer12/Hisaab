@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import Layout from './components/Layout/Layout';
 import InstallPrompt from './components/UI/InstallPrompt';
+import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
 import ProvidersPage from './pages/ProvidersPage';
 import EntryPage from './pages/EntryPage';
@@ -10,6 +11,7 @@ import BillingPage from './pages/BillingPage';
 import StatsPage from './pages/StatsPage';
 import CalculatorPage from './pages/CalculatorPage';
 import BackupPage from './pages/BackupPage';
+import CookDashboardPage from './pages/CookDashboardPage';
 
 function App() {
   return (
@@ -17,13 +19,20 @@ function App() {
       <Router>
         <Layout>
           <Routes>
-            <Route path="/" element={<DashboardPage />} />
+            {/* Landing — service selector */}
+            <Route path="/" element={<HomePage />} />
+
+            {/* Milk section */}
+            <Route path="/milk" element={<DashboardPage />} />
             <Route path="/providers" element={<ProvidersPage />} />
             <Route path="/entry" element={<EntryPage />} />
             <Route path="/billing" element={<BillingPage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/calculator" element={<CalculatorPage />} />
             <Route path="/backup" element={<BackupPage />} />
+
+            {/* Cook section */}
+            <Route path="/cook" element={<CookDashboardPage />} />
           </Routes>
         </Layout>
       </Router>

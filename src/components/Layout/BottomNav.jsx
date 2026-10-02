@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Plus, Receipt, MoreHorizontal, TrendingUp, Calculator, DatabaseBackup } from 'lucide-react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Home, Users, Plus, Receipt, MoreHorizontal, TrendingUp, Calculator, DatabaseBackup, LayoutDashboard, ChefHat } from 'lucide-react';
 
 const moreItems = [
   { path: '/stats', label: 'Statistics', icon: TrendingUp, color: '#8B5CF6' },
@@ -8,10 +8,18 @@ const moreItems = [
   { path: '/backup', label: 'Backup', icon: DatabaseBackup, color: '#F97316' },
 ];
 
+// Milk section paths
+const milkPaths = ['/milk', '/providers', '/entry', '/billing', '/stats', '/calculator', '/backup'];
+
 export default function BottomNav() {
   const [showMore, setShowMore] = useState(false);
   const moreRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isMilkSection = milkPaths.includes(location.pathname);
+  const isCookSection = location.pathname === '/cook';
+  const isHome = location.pathname === '/';
 
   // Close popup on outside click
   useEffect(() => {
@@ -34,28 +42,57 @@ export default function BottomNav() {
     navigate(path);
   };
 
+  // Home page — simple two-tab nav
+  if (isHome) {
+    return (
+      <nav className="bottom-nav">
+        <NavLink to="/" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`} end>
+          <div className="bottom-nav-item-icon"><Home size={20} /></div>
+          <span>Home</span>
+        </NavLink>
+      </nav>
+    );
+  }
+
+  // Cook section nav
+  if (isCookSection) {
+    return (
+      <nav className="bottom-nav">
+        <NavLink to="/" className="bottom-nav-item">
+          <div className="bottom-nav-item-icon"><Home size={20} /></div>
+          <span>Home</span>
+        </NavLink>
+        <NavLink to="/cook" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+          <div className="bottom-nav-item-icon"><ChefHat size={20} /></div>
+          <span>Cook</span>
+        </NavLink>
+      </nav>
+    );
+  }
+
+  // Milk section nav (same as before, but Home → /, milk dashboard → /milk)
   return (
     <nav className="bottom-nav">
-      <NavLink to="/" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`} end>
-        <div className="bottom-nav-item-icon"><LayoutDashboard size={20} /></div>
+      <NavLink to="/" className="bottom-nav-item">
+        <div className="bottom-nav-item-icon"><Home size={20} /></div>
         <span>Home</span>
       </NavLink>
-      
-      <NavLink to="/providers" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-        <div className="bottom-nav-item-icon"><Users size={20} /></div>
-        <span>Providers</span>
+
+      <NavLink to="/milk" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+        <div className="bottom-nav-item-icon"><LayoutDashboard size={20} /></div>
+        <span>Dashboard</span>
       </NavLink>
-      
+
       <NavLink to="/entry" className={({ isActive }) => `bottom-nav-item add-btn ${isActive ? 'active' : ''}`}>
         <div className="bottom-nav-item-icon"><Plus size={24} strokeWidth={2.5} /></div>
         <span>Add</span>
       </NavLink>
-      
+
       <NavLink to="/billing" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
         <div className="bottom-nav-item-icon"><Receipt size={20} /></div>
         <span>Bills</span>
       </NavLink>
-      
+
       <div className="bottom-nav-more-wrapper" ref={moreRef}>
         {showMore && (
           <div className="bottom-nav-popup">
