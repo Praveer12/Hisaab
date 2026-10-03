@@ -1,6 +1,7 @@
 import React from 'react';
 import Header from './Header';
 import BottomNav from './BottomNav';
+import SideNav from './SideNav';
 import ToastContainer from '../UI/Toast';
 import { useApp } from '../../context/AppContext';
 
@@ -9,6 +10,7 @@ export default function Layout({ children }) {
 
   return (
     <div className="app-layout">
+      <SideNav />
       <div className="main-wrapper">
         <Header />
         <main className="main-content">
