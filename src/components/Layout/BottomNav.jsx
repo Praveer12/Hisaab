@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Home, Users, Plus, Receipt, MoreHorizontal, TrendingUp, Calculator, DatabaseBackup, LayoutDashboard, ChefHat, ContactRound } from 'lucide-react';
 
 const moreItems = [
+  { path: '/providers', label: 'Providers', icon: Users, color: '#10B981' },
   { path: '/stats', label: 'Statistics', icon: TrendingUp, color: '#8B5CF6' },
   { path: '/calculator', label: 'Calculator', icon: Calculator, color: '#0EA5E9' },
   { path: '/backup', label: 'Backup', icon: DatabaseBackup, color: '#F97316' },
