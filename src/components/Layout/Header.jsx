@@ -20,6 +20,7 @@ const pageTitles = {
   '/calculator': 'Calculator',
   '/backup': 'Backup',
   '/cook': null,         // Cook dashboard — greeting style
+  '/contacts': 'Service Contacts',
 };
 
 export default function Header() {

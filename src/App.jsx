@@ -12,6 +12,7 @@ import StatsPage from './pages/StatsPage';
 import CalculatorPage from './pages/CalculatorPage';
 import BackupPage from './pages/BackupPage';
 import CookDashboardPage from './pages/CookDashboardPage';
+import ServiceContactsPage from './pages/ServiceContactsPage';
 
 function App() {
   return (
@@ -33,6 +34,9 @@ function App() {
 
             {/* Cook section */}
             <Route path="/cook" element={<CookDashboardPage />} />
+
+            {/* Service Contacts */}
+            <Route path="/contacts" element={<ServiceContactsPage />} />
           </Routes>
         </Layout>
       </Router>

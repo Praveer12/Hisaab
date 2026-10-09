@@ -42,7 +42,23 @@ export default function HomePage() {
           </div>
           <div className="service-card__arrow">›</div>
         </button>
+
+        {/* Service Contacts Card */}
+        <button
+          className="service-card service-card--contacts"
+          onClick={() => navigate('/contacts')}
+        >
+          <div className="service-card__icon-wrap service-card__icon-wrap--contacts">
+            <span className="service-card__emoji">📇</span>
+          </div>
+          <div className="service-card__body">
+            <h2 className="service-card__title">Service Contacts</h2>
+            <p className="service-card__desc">Electrician, plumber, maid ke numbers</p>
+          </div>
+          <div className="service-card__arrow">›</div>
+        </button>
       </div>
     </div>
   );
 }
+

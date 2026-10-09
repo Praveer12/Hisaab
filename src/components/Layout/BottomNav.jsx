@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Users, Plus, Receipt, MoreHorizontal, TrendingUp, Calculator, DatabaseBackup, LayoutDashboard, ChefHat } from 'lucide-react';
+import { Home, Users, Plus, Receipt, MoreHorizontal, TrendingUp, Calculator, DatabaseBackup, LayoutDashboard, ChefHat, ContactRound } from 'lucide-react';
 
 const moreItems = [
   { path: '/stats', label: 'Statistics', icon: TrendingUp, color: '#8B5CF6' },
@@ -19,6 +19,7 @@ export default function BottomNav() {
 
   const isMilkSection = milkPaths.includes(location.pathname);
   const isCookSection = location.pathname === '/cook';
+  const isContactsSection = location.pathname === '/contacts';
   const isHome = location.pathname === '/';
 
   // Close popup on outside click
@@ -50,6 +51,10 @@ export default function BottomNav() {
           <div className="bottom-nav-item-icon"><Home size={20} /></div>
           <span>Home</span>
         </NavLink>
+        <NavLink to="/contacts" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+          <div className="bottom-nav-item-icon"><ContactRound size={20} /></div>
+          <span>Contacts</span>
+        </NavLink>
       </nav>
     );
   }
@@ -65,6 +70,22 @@ export default function BottomNav() {
         <NavLink to="/cook" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
           <div className="bottom-nav-item-icon"><ChefHat size={20} /></div>
           <span>Cook</span>
+        </NavLink>
+      </nav>
+    );
+  }
+
+  // Service Contacts section nav
+  if (isContactsSection) {
+    return (
+      <nav className="bottom-nav">
+        <NavLink to="/" className="bottom-nav-item">
+          <div className="bottom-nav-item-icon"><Home size={20} /></div>
+          <span>Home</span>
+        </NavLink>
+        <NavLink to="/contacts" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+          <div className="bottom-nav-item-icon"><ContactRound size={20} /></div>
+          <span>Contacts</span>
         </NavLink>
       </nav>
     );

@@ -10,6 +10,7 @@ import {
   Calculator,
   DatabaseBackup,
   ChefHat,
+  ContactRound,
 } from 'lucide-react';
 
 // Routes for the milk section sidebar
@@ -27,18 +28,26 @@ const cookNavItems = [
   { path: '/cook', label: 'Cook Dashboard', icon: ChefHat },
 ];
 
+const contactsNavItems = [
+  { path: '/contacts', label: 'Service Contacts', icon: ContactRound },
+];
+
 const milkPaths = milkNavItems.map(i => i.path);
 const cookPaths = cookNavItems.map(i => i.path);
+const contactsPaths = contactsNavItems.map(i => i.path);
 
 export default function SideNav() {
   const location = useLocation();
   const isMilkSection = milkPaths.includes(location.pathname);
   const isCookSection = cookPaths.includes(location.pathname);
+  const isContactsSection = contactsPaths.includes(location.pathname);
 
   const navItems = isMilkSection
     ? milkNavItems
     : isCookSection
     ? cookNavItems
+    : isContactsSection
+    ? contactsNavItems
     : [];
 
   return (
@@ -50,9 +59,9 @@ export default function SideNav() {
       </div>
 
       {/* Section label */}
-      {(isMilkSection || isCookSection) && (
+      {(isMilkSection || isCookSection || isContactsSection) && (
         <div className="side-nav-section-label">
-          {isMilkSection ? '🥛 Doodh' : '👨‍🍳 Cook'}
+          {isMilkSection ? '🥛 Doodh' : isCookSection ? '👨‍🍳 Cook' : '📇 Contacts'}
         </div>
       )}
 
