@@ -3,7 +3,8 @@ import {
   Phone, MessageCircle, Plus, Search, Trash2, Edit3, X,
   UserPlus, Share2, ChevronDown, ChevronUp, Import, ContactRound
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/firebase';
+import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { generateId } from '../utils/dateHelpers';
 import {
   SERVICE_CATEGORIES,
@@ -208,30 +209,31 @@ export default function ServiceContactsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [importing, setImporting] = useState(false);
 
-  // ── Fetch contacts from Supabase ────────────────────────────────────────
+  // ── Fetch contacts from Firestore ───────────────────────────────────────
   useEffect(() => {
     async function fetchContacts() {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('service_contacts')
-        .select('*')
-        .order('name', { ascending: true });
-
-      if (error) {
+      try {
+        const snap = await getDocs(collection(db, 'service_contacts'));
+        const mapped = snap.docs.map(docSnap => {
+          const row = docSnap.data();
+          return {
+            id: docSnap.id,
+            name: row.name,
+            phone: row.phone,
+            category: row.category,
+            notes: row.notes || '',
+            createdAt: row.created_at || '',
+          };
+        });
+        mapped.sort((a, b) => a.name.localeCompare(b.name));
+        setContacts(mapped);
+      } catch (error) {
         console.error('Error fetching service_contacts:', error);
         showToast('Error loading contacts', 'error');
-      } else {
-        const mapped = (data || []).map(row => ({
-          id: row.id,
-          name: row.name,
-          phone: row.phone,
-          category: row.category,
-          notes: row.notes || '',
-          createdAt: row.created_at,
-        }));
-        setContacts(mapped);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     fetchContacts();
   }, [showToast]);
@@ -245,36 +247,41 @@ export default function ServiceContactsPage() {
         phone: formData.phone,
         category: formData.category,
         notes: formData.notes,
+        updated_at: new Date().toISOString()
       };
       setContacts(prev => prev.map(c => c.id === editingContact.id ? { ...c, ...formData } : c));
       setEditingContact(null);
       setShowForm(false);
 
-      const { error } = await supabase.from('service_contacts').update(dbPayload).eq('id', editingContact.id);
-      if (error) {
-        showToast('Error updating contact', 'error');
-      } else {
+      try {
+        await updateDoc(doc(db, 'service_contacts', editingContact.id), dbPayload);
         showToast('Contact updated ✓');
+      } catch (error) {
+        console.error(error);
+        showToast('Error updating contact', 'error');
       }
     } else {
       // Add new
       const newId = generateId();
+      const createdAt = new Date().toISOString();
       const dbPayload = {
         id: newId,
         name: formData.name,
         phone: formData.phone,
         category: formData.category,
         notes: formData.notes,
+        created_at: createdAt
       };
-      const uiPayload = { ...formData, id: newId, createdAt: new Date().toISOString() };
+      const uiPayload = { ...formData, id: newId, createdAt };
       setContacts(prev => [...prev, uiPayload].sort((a, b) => a.name.localeCompare(b.name)));
       setShowForm(false);
 
-      const { error } = await supabase.from('service_contacts').insert([dbPayload]);
-      if (error) {
-        showToast('Error saving contact', 'error');
-      } else {
+      try {
+        await setDoc(doc(db, 'service_contacts', newId), dbPayload);
         showToast('Contact saved ✓');
+      } catch (error) {
+        console.error(error);
+        showToast('Error saving contact', 'error');
       }
     }
   }, [editingContact, showToast]);
@@ -284,11 +291,12 @@ export default function ServiceContactsPage() {
     setContacts(prev => prev.filter(c => c.id !== id));
     setShowDeleteConfirm(null);
 
-    const { error } = await supabase.from('service_contacts').delete().eq('id', id);
-    if (error) {
-      showToast('Error deleting contact', 'error');
-    } else {
+    try {
+      await deleteDoc(doc(db, 'service_contacts', id));
       showToast('Contact deleted');
+    } catch (error) {
+      console.error(error);
+      showToast('Error deleting contact', 'error');
     }
   }, [showToast]);
 
@@ -358,19 +366,25 @@ export default function ServiceContactsPage() {
             [...prev, ...newContacts].sort((a, b) => a.name.localeCompare(b.name))
           );
 
-          // Save to Supabase
-          const dbPayloads = newContacts.map(c => ({
-            id: c.id,
-            name: c.name,
-            phone: c.phone,
-            category: c.category,
-            notes: c.notes,
-          }));
-          const { error } = await supabase.from('service_contacts').insert(dbPayloads);
-          if (error) {
-            showToast('Error saving imported contacts', 'error');
-          } else {
+          // Save to Firestore batch
+          const batch = writeBatch(db);
+          newContacts.forEach(c => {
+            const dbPayload = {
+              id: c.id,
+              name: c.name,
+              phone: c.phone,
+              category: c.category,
+              notes: c.notes,
+              created_at: new Date().toISOString()
+            };
+            batch.set(doc(db, 'service_contacts', c.id), dbPayload);
+          });
+          try {
+            await batch.commit();
             showToast(`${addedCount} contact${addedCount > 1 ? 's' : ''} imported & auto-sorted! ✨`);
+          } catch (error) {
+            console.error(error);
+            showToast('Error saving imported contacts', 'error');
           }
         } else {
           showToast('No new contacts to import (already exist or empty)');

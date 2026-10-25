@@ -1,5 +1,14 @@
 import React, { createContext, useContext, useCallback, useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/firebase';
+import { 
+  collection, 
+  getDocs, 
+  doc, 
+  setDoc, 
+  updateDoc, 
+  deleteDoc, 
+  writeBatch 
+} from 'firebase/firestore';
 import { generateId } from '../utils/dateHelpers';
 
 const AppContext = createContext(null);
@@ -26,18 +35,22 @@ export function AppProvider({ children }) {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [provRes, entRes, payRes] = await Promise.all([
-          supabase.from('providers').select('*').order('created_at', { ascending: true }),
-          supabase.from('entries').select('*').order('date', { ascending: false }),
-          supabase.from('monthly_payments').select('*')
+        const [provSnap, entSnap, paySnap] = await Promise.all([
+          getDocs(collection(db, 'providers')),
+          getDocs(collection(db, 'entries')),
+          getDocs(collection(db, 'monthly_payments'))
         ]);
 
-        if (provRes.error) throw provRes.error;
-        if (entRes.error) throw entRes.error;
-        if (payRes.error) throw payRes.error;
+        const provData = provSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        provData.sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+
+        const entData = entSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        entData.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+        const payData = paySnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         // Map Providers
-        const mappedProviders = provRes.data.map(p => ({
+        const mappedProviders = provData.map(p => ({
           id: p.id,
           name: p.name,
           contact: p.contact || '',
@@ -51,7 +64,7 @@ export function AppProvider({ children }) {
         setProviders(mappedProviders);
 
         // Map Entries
-        const mappedEntries = entRes.data.map(e => ({
+        const mappedEntries = entData.map(e => ({
           id: e.id,
           date: e.date,
           providerId: e.provider_id,
@@ -63,7 +76,7 @@ export function AppProvider({ children }) {
           },
           newspaper: {
             taken: e.newspaper_taken,
-            name: '', // Removed from DB schema to simplify
+            name: '',
             rate: Number(e.newspaper_rate)
           },
           totalAmount: Number(e.total_amount),
@@ -76,7 +89,7 @@ export function AppProvider({ children }) {
 
         // Map Payments to dict
         const paymentsDict = {};
-        payRes.data.forEach(p => {
+        payData.forEach(p => {
           paymentsDict[`${p.provider_id}_${p.year}_${p.month}`] = {
             status: p.status,
             method: p.method
@@ -85,7 +98,7 @@ export function AppProvider({ children }) {
         setMonthlyPayments(paymentsDict);
 
       } catch (error) {
-        console.error('Error fetching from Supabase:', error);
+        console.error('Error fetching from Firestore:', error);
         showToast('Error loading data from server', 'error');
       } finally {
         setLoading(false);
@@ -96,7 +109,8 @@ export function AppProvider({ children }) {
 
   // ── Provider CRUD ──────────────────────────────────────────────────────────
   const addProvider = useCallback(async (providerData) => {
-    const newId = generateId(); // We can still generate UUID client-side for immediate UI update
+    const newId = generateId();
+    const createdAt = new Date().toISOString();
     const dbPayload = {
       id: newId,
       name: providerData.name || '',
@@ -105,6 +119,7 @@ export function AppProvider({ children }) {
       default_quantity: parseFloat(providerData.defaultQuantity) || 0,
       address: providerData.address || '',
       is_active: providerData.isActive !== undefined ? providerData.isActive : true,
+      created_at: createdAt
     };
 
     // Optimistic UI update
@@ -116,15 +131,15 @@ export function AppProvider({ children }) {
       defaultQuantity: dbPayload.default_quantity,
       address: dbPayload.address,
       isActive: dbPayload.is_active,
-      createdAt: new Date().toISOString()
+      createdAt
     };
     setProviders(prev => [...prev, uiPayload]);
 
-    const { error } = await supabase.from('providers').insert([dbPayload]);
-    if (error) {
+    try {
+      await setDoc(doc(db, 'providers', dbPayload.id), dbPayload);
+    } catch (error) {
       console.error(error);
       showToast('Error saving provider', 'error');
-      // Ideally rollback here in a prod app
     }
     return uiPayload;
   }, [showToast]);
@@ -141,8 +156,12 @@ export function AppProvider({ children }) {
     if (updates.isActive !== undefined) dbPayload.is_active = updates.isActive;
 
     if (Object.keys(dbPayload).length > 0) {
-      const { error } = await supabase.from('providers').update(dbPayload).eq('id', id);
-      if (error) showToast('Error updating provider', 'error');
+      try {
+        await updateDoc(doc(db, 'providers', id), dbPayload);
+      } catch (error) {
+        console.error(error);
+        showToast('Error updating provider', 'error');
+      }
     }
   }, [showToast]);
 
@@ -150,8 +169,12 @@ export function AppProvider({ children }) {
     setProviders(prev => prev.filter(p => p.id !== id));
     setEntries(prev => prev.filter(e => e.providerId !== id));
 
-    const { error } = await supabase.from('providers').delete().eq('id', id);
-    if (error) showToast('Error deleting provider', 'error');
+    try {
+      await deleteDoc(doc(db, 'providers', id));
+    } catch (error) {
+      console.error(error);
+      showToast('Error deleting provider', 'error');
+    }
   }, [showToast]);
 
   const getProvider = useCallback((id) => providers.find(p => p.id === id) || null, [providers]);
@@ -167,27 +190,22 @@ export function AppProvider({ children }) {
       isCurrent: p.id === id
     })));
 
-    // DB: first unset all current, then set the chosen one
-    const { error: resetError } = await supabase
-      .from('providers')
-      .update({ is_current: false })
-      .eq('is_current', true); // only reset ones that are currently true
-
-    if (resetError) {
-      console.error('Error resetting current provider:', resetError);
-    }
-
-    if (id) {
-      const { error } = await supabase
-        .from('providers')
-        .update({ is_current: true })
-        .eq('id', id);
-      if (error) {
-        console.error('Error setting current provider:', error);
-        showToast('Error setting delivering provider', 'error');
+    try {
+      const batch = writeBatch(db);
+      providers.forEach(p => {
+        if (p.isCurrent && p.id !== id) {
+          batch.update(doc(db, 'providers', p.id), { is_current: false });
+        }
+      });
+      if (id) {
+        batch.update(doc(db, 'providers', id), { is_current: true });
       }
+      await batch.commit();
+    } catch (error) {
+      console.error('Error setting current provider:', error);
+      showToast('Error setting delivering provider', 'error');
     }
-  }, [showToast]);
+  }, [providers, showToast]);
 
   // ── Entry CRUD ─────────────────────────────────────────────────────────────
   const _formatEntryForDB = (entryData, id) => {
@@ -232,22 +250,29 @@ export function AppProvider({ children }) {
     totalAmount: dbPayload.total_amount,
     paymentMethod: dbPayload.payment_method,
     notes: dbPayload.notes,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: dbPayload.created_at || new Date().toISOString(),
+    updatedAt: dbPayload.updated_at || new Date().toISOString(),
   });
 
   const addEntry = useCallback(async (entryData) => {
     const dbPayload = _formatEntryForDB(entryData);
+    const now = new Date().toISOString();
+    dbPayload.created_at = now;
+    dbPayload.updated_at = now;
+
     const uiPayload = _formatEntryForUI(dbPayload);
     setEntries(prev => [...prev, uiPayload]);
 
-    const { error } = await supabase.from('entries').insert([dbPayload]);
-    if (error) showToast('Error saving entry', 'error');
+    try {
+      await setDoc(doc(db, 'entries', dbPayload.id), dbPayload);
+    } catch (error) {
+      console.error(error);
+      showToast('Error saving entry', 'error');
+    }
     return uiPayload;
   }, [showToast]);
 
   const updateEntry = useCallback(async (id, updates) => {
-    // We fetch the current entry to merge updates accurately for DB
     setEntries(prev => {
       const existing = prev.find(e => e.id === id);
       if (!existing) return prev;
@@ -258,9 +283,11 @@ export function AppProvider({ children }) {
       
       const uiPayload = _formatEntryForUI(_formatEntryForDB(mergedUI, id));
       uiPayload.createdAt = existing.createdAt;
+      const now = new Date().toISOString();
+      uiPayload.updatedAt = now;
 
-      // Async DB call
-      supabase.from('entries').update({
+      // Async Firestore update
+      updateDoc(doc(db, 'entries', id), {
         milk_morning: uiPayload.milk.morning,
         milk_evening: uiPayload.milk.evening,
         milk_rate: uiPayload.milk.ratePerLitre,
@@ -270,9 +297,10 @@ export function AppProvider({ children }) {
         total_amount: uiPayload.totalAmount,
         payment_method: uiPayload.paymentMethod,
         notes: uiPayload.notes,
-        updated_at: new Date().toISOString()
-      }).eq('id', id).then(({error}) => {
-        if(error) showToast('Error updating entry', 'error');
+        updated_at: now
+      }).catch((error) => {
+        console.error(error);
+        showToast('Error updating entry', 'error');
       });
 
       return prev.map(e => e.id === id ? uiPayload : e);
@@ -281,15 +309,19 @@ export function AppProvider({ children }) {
 
   const deleteEntry = useCallback(async (id) => {
     setEntries(prev => prev.filter(e => e.id !== id));
-    const { error } = await supabase.from('entries').delete().eq('id', id);
-    if (error) showToast('Error deleting entry', 'error');
+    try {
+      await deleteDoc(doc(db, 'entries', id));
+    } catch (error) {
+      console.error(error);
+      showToast('Error deleting entry', 'error');
+    }
   }, [showToast]);
 
   const saveBulkEntries = useCallback(async (newEntriesData) => {
-    // Separate into inserts and updates
     setEntries(prev => {
       let updatedUI = [...prev];
       const dbUpserts = [];
+      const now = new Date().toISOString();
 
       newEntriesData.forEach(entryData => {
         const dbPayload = _formatEntryForDB(entryData);
@@ -297,18 +329,26 @@ export function AppProvider({ children }) {
         
         if (existingIndex !== -1) {
           dbPayload.id = updatedUI[existingIndex].id;
+          dbPayload.updated_at = now;
           const uiPayload = _formatEntryForUI(dbPayload);
           uiPayload.createdAt = updatedUI[existingIndex].createdAt;
           updatedUI[existingIndex] = uiPayload;
         } else {
+          dbPayload.created_at = now;
+          dbPayload.updated_at = now;
           updatedUI.push(_formatEntryForUI(dbPayload));
         }
         dbUpserts.push(dbPayload);
       });
 
-      // Async upsert to DB
-      supabase.from('entries').upsert(dbUpserts, { onConflict: 'id' }).then(({error}) => {
-        if (error) showToast('Error saving bulk entries', 'error');
+      // Async batch upsert to Firestore
+      const batch = writeBatch(db);
+      dbUpserts.forEach(item => {
+        batch.set(doc(db, 'entries', item.id), item, { merge: true });
+      });
+      batch.commit().catch(error => {
+        console.error(error);
+        showToast('Error saving bulk entries', 'error');
       });
 
       return updatedUI;
@@ -327,15 +367,17 @@ export function AppProvider({ children }) {
     const key = `${providerId}_${year}_${month}`;
     setMonthlyPayments(prev => ({ ...prev, [key]: paymentData }));
 
-    const { error } = await supabase.from('monthly_payments').upsert({
-      provider_id: providerId,
-      year,
-      month,
-      status: paymentData.status,
-      method: paymentData.method
-    }, { onConflict: 'provider_id,year,month' });
-
-    if (error) {
+    try {
+      await setDoc(doc(db, 'monthly_payments', key), {
+        id: key,
+        provider_id: providerId,
+        year,
+        month,
+        status: paymentData.status,
+        method: paymentData.method,
+        updated_at: new Date().toISOString()
+      }, { merge: true });
+    } catch (error) {
       console.error(error);
       showToast('Error saving payment status', 'error');
     }

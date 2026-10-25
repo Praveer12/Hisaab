@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Sun, Moon, X } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/firebase';
+import { collection, doc, getDoc, getDocs, setDoc, query, where } from 'firebase/firestore';
 import { getDaysInMonth, getFirstDayOfMonth, formatDate, getMonthName, isToday, isFutureDate } from '../utils/dateHelpers';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -82,33 +83,34 @@ export default function CookDashboardPage() {
       setLoading(true);
       const monthPrefix = `${year}-${String(dbMonth).padStart(2, '0')}`;
 
-      const [attRes, salRes] = await Promise.all([
-        supabase
-          .from('cook_attendance')
-          .select('date, morning, evening')
-          .gte('date', `${monthPrefix}-01`)
-          .lte('date', `${monthPrefix}-31`),
-        supabase
-          .from('cook_salary')
-          .select('paid')
-          .eq('year', year)
-          .eq('month', dbMonth)
-          .maybeSingle()
-      ]);
+      try {
+        const attQuery = query(
+          collection(db, 'cook_attendance'),
+          where('date', '>=', `${monthPrefix}-01`),
+          where('date', '<=', `${monthPrefix}-31`)
+        );
+        const salaryDocRef = doc(db, 'cook_salary', `${year}_${dbMonth}`);
 
-      if (cancelled) return;
+        const [attSnap, salSnap] = await Promise.all([
+          getDocs(attQuery),
+          getDoc(salaryDocRef)
+        ]);
 
-      if (attRes.error) console.error('cook_attendance fetch:', attRes.error);
-      if (salRes.error) console.error('cook_salary fetch:', salRes.error);
+        if (cancelled) return;
 
-      // Build attendance map
-      const map = {};
-      (attRes.data || []).forEach(row => {
-        map[row.date] = { morning: row.morning, evening: row.evening };
-      });
-      setAttendance(map);
-      setPaid(salRes.data?.paid ?? false);
-      setLoading(false);
+        // Build attendance map
+        const map = {};
+        attSnap.docs.forEach(docSnap => {
+          const row = docSnap.data();
+          map[row.date] = { morning: row.morning, evening: row.evening };
+        });
+        setAttendance(map);
+        setPaid(salSnap.exists() ? (salSnap.data()?.paid ?? false) : false);
+      } catch (err) {
+        console.error('Cook data fetch error:', err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
 
     fetchMonthData();
@@ -128,14 +130,16 @@ export default function CookDashboardPage() {
       prev?.dateStr === dateStr ? { ...prev, [session]: updated[session] } : prev
     );
 
-    // Upsert to Supabase
-    const { error } = await supabase
-      .from('cook_attendance')
-      .upsert({ date: dateStr, morning: updated.morning, evening: updated.evening },
-        { onConflict: 'date' });
-
-    if (error) {
-      console.error('cook_attendance upsert:', error);
+    // Save to Firestore
+    try {
+      await setDoc(doc(db, 'cook_attendance', dateStr), {
+        date: dateStr,
+        morning: updated.morning,
+        evening: updated.evening,
+        updated_at: new Date().toISOString()
+      }, { merge: true });
+    } catch (error) {
+      console.error('cook_attendance setDoc error:', error);
       // Rollback on error
       setAttendance(prev => ({ ...prev, [dateStr]: current }));
     }
@@ -146,13 +150,15 @@ export default function CookDashboardPage() {
     const newPaid = !paid;
     setPaid(newPaid); // optimistic
 
-    const { error } = await supabase
-      .from('cook_salary')
-      .upsert({ year, month: dbMonth, paid: newPaid },
-        { onConflict: 'year,month' });
-
-    if (error) {
-      console.error('cook_salary upsert:', error);
+    try {
+      await setDoc(doc(db, 'cook_salary', `${year}_${dbMonth}`), {
+        year,
+        month: dbMonth,
+        paid: newPaid,
+        updated_at: new Date().toISOString()
+      }, { merge: true });
+    } catch (error) {
+      console.error('cook_salary setDoc error:', error);
       setPaid(!newPaid); // rollback
     }
   }, [paid, year, dbMonth]);
