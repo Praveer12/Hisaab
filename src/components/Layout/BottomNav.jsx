@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Users, Plus, Receipt, MoreHorizontal, TrendingUp, Calculator, DatabaseBackup, LayoutDashboard, ChefHat, ContactRound } from 'lucide-react';
+import { Home, Users, Plus, Receipt, MoreHorizontal, TrendingUp, Calculator, DatabaseBackup, LayoutDashboard, ChefHat, ContactRound, Brush } from 'lucide-react';
 
 const moreItems = [
   { path: '/providers', label: 'Providers', icon: Users, color: '#10B981' },
@@ -20,6 +20,7 @@ export default function BottomNav() {
 
   const isMilkSection = milkPaths.includes(location.pathname);
   const isCookSection = location.pathname === '/cook';
+  const isMaidSection = location.pathname === '/maid';
   const isContactsSection = location.pathname === '/contacts';
   const isHome = location.pathname === '/';
 
@@ -71,6 +72,22 @@ export default function BottomNav() {
         <NavLink to="/cook" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
           <div className="bottom-nav-item-icon"><ChefHat size={20} /></div>
           <span>Cook</span>
+        </NavLink>
+      </nav>
+    );
+  }
+
+  // Maid section nav
+  if (isMaidSection) {
+    return (
+      <nav className="bottom-nav">
+        <NavLink to="/" className="bottom-nav-item">
+          <div className="bottom-nav-item-icon"><Home size={20} /></div>
+          <span>Home</span>
+        </NavLink>
+        <NavLink to="/maid" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+          <div className="bottom-nav-item-icon"><Brush size={20} /></div>
+          <span>Maid</span>
         </NavLink>
       </nav>
     );

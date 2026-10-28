@@ -43,6 +43,21 @@ export default function HomePage() {
           <div className="service-card__arrow">›</div>
         </button>
 
+        {/* Maid Card */}
+        <button
+          className="service-card service-card--maid"
+          onClick={() => navigate('/maid')}
+        >
+          <div className="service-card__icon-wrap service-card__icon-wrap--maid">
+            <span className="service-card__emoji">🧹</span>
+          </div>
+          <div className="service-card__body">
+            <h2 className="service-card__title">Maid</h2>
+            <p className="service-card__desc">Mahine ka hisaab, paid ya unpaid</p>
+          </div>
+          <div className="service-card__arrow">›</div>
+        </button>
+
         {/* Service Contacts Card */}
         <button
           className="service-card service-card--contacts"

@@ -12,6 +12,7 @@ import StatsPage from './pages/StatsPage';
 import CalculatorPage from './pages/CalculatorPage';
 import BackupPage from './pages/BackupPage';
 import CookDashboardPage from './pages/CookDashboardPage';
+import MaidDashboardPage from './pages/MaidDashboardPage';
 import ServiceContactsPage from './pages/ServiceContactsPage';
 
 function App() {
@@ -34,6 +35,9 @@ function App() {
 
             {/* Cook section */}
             <Route path="/cook" element={<CookDashboardPage />} />
+
+            {/* Maid section */}
+            <Route path="/maid" element={<MaidDashboardPage />} />
 
             {/* Service Contacts */}
             <Route path="/contacts" element={<ServiceContactsPage />} />
