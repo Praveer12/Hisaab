@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { Train, ExternalLink, X, Search } from 'lucide-react';
+import { Train, ExternalLink, X, Search, Copy, CheckCheck } from 'lucide-react';
 
-// Sites that accept PNR directly in the URL
+// ──────────────────────────────────────────────────────────────
+// urlFill  = true  → PNR URL mein directly jaata hai (auto-filled)
+// urlFill  = false → PNR clipboard mein copy hoga, user paste karega
+// ──────────────────────────────────────────────────────────────
 const PNR_SITES = [
   {
     id: 'confirmtkt',
@@ -11,7 +14,19 @@ const PNR_SITES = [
     colorBg: '#F5F3FF',
     colorBorder: 'rgba(124, 58, 237, 0.25)',
     getUrl: (pnr) => `https://www.confirmtkt.com/pnr-status/${pnr}`,
-    desc: 'Seat confirm chance bhi dikhata hai',
+    urlFill: true,
+    desc: 'URL se auto-fill • confirm chance bhi dikhata hai',
+  },
+  {
+    id: 'indianrail',
+    name: 'Indian Railways (Official)',
+    emoji: '🏛️',
+    color: '#047857',
+    colorBg: '#F0FDF4',
+    colorBorder: 'rgba(4, 120, 87, 0.25)',
+    getUrl: () => 'https://www.indianrail.gov.in/enquiry/PNR/PnrEnquiry.html?locale=en',
+    urlFill: false,
+    desc: 'PNR copy hoga → site pe paste karo',
   },
   {
     id: 'railyatri',
@@ -20,34 +35,16 @@ const PNR_SITES = [
     color: '#0369A1',
     colorBg: '#F0F9FF',
     colorBorder: 'rgba(3, 105, 161, 0.25)',
-    getUrl: (pnr) => `https://www.railyatri.in/pnr-status?pnr=${pnr}`,
-    desc: 'Train status + coach position',
-  },
-  {
-    id: 'irctc',
-    name: 'IRCTC Official',
-    emoji: '🏛️',
-    color: '#047857',
-    colorBg: '#F0FDF4',
-    colorBorder: 'rgba(4, 120, 87, 0.25)',
-    getUrl: (pnr) => `https://www.irctc.co.in/online-charts/index.html?pnrNumber=${pnr}`,
-    desc: 'Official Indian Railways',
-  },
-  {
-    id: 'paytm',
-    name: 'Paytm',
-    emoji: '💳',
-    color: '#0EA5E9',
-    colorBg: '#F0F9FF',
-    colorBorder: 'rgba(14, 165, 233, 0.25)',
-    getUrl: (pnr) => `https://tickets.paytm.com/pnr-status/${pnr}`,
-    desc: 'Fast aur simple',
+    getUrl: () => 'https://www.railyatri.in/pnr-status',
+    urlFill: false,
+    desc: 'PNR copy hoga → site pe paste karo',
   },
 ];
 
 export default function PNRCheckerPage() {
   const [pnr, setPnr] = useState('');
   const [error, setError] = useState('');
+  const [copiedId, setCopiedId] = useState(null); // which site was just clicked
 
   const handleInput = (e) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 10);
@@ -58,13 +55,26 @@ export default function PNRCheckerPage() {
   const handleClear = () => {
     setPnr('');
     setError('');
+    setCopiedId(null);
   };
 
-  const handleCheck = (site) => {
+  const handleCheck = async (site) => {
     if (pnr.length !== 10) {
       setError('PNR 10 digit ka hona chahiye');
       return;
     }
+
+    if (!site.urlFill) {
+      // Copy PNR to clipboard, then open site
+      try {
+        await navigator.clipboard.writeText(pnr);
+      } catch {
+        // fallback — still open the site even if clipboard fails
+      }
+      setCopiedId(site.id);
+      setTimeout(() => setCopiedId(null), 3000);
+    }
+
     window.open(site.getUrl(pnr), '_blank', 'noopener,noreferrer');
   };
 
@@ -105,7 +115,7 @@ export default function PNRCheckerPage() {
           )}
         </div>
 
-        {/* Character counter */}
+        {/* Counter / error */}
         <div className="pnr-counter-row">
           {error ? (
             <span className="pnr-error">{error}</span>
@@ -118,6 +128,14 @@ export default function PNRCheckerPage() {
         </div>
       </div>
 
+      {/* Clipboard toast */}
+      {copiedId && (
+        <div className="pnr-clipboard-toast">
+          <CheckCheck size={15} />
+          PNR <strong>{pnr}</strong> clipboard mein copy ho gaya — site pe <strong>Ctrl+V</strong> / paste karo
+        </div>
+      )}
+
       {/* Site Buttons */}
       <div className="pnr-sites-label">
         <Search size={14} />
@@ -125,31 +143,38 @@ export default function PNRCheckerPage() {
       </div>
 
       <div className="pnr-sites-list">
-        {PNR_SITES.map((site) => (
-          <button
-            key={site.id}
-            className={`pnr-site-btn ${!isReady ? 'pnr-site-btn--disabled' : ''}`}
-            onClick={() => handleCheck(site)}
-            disabled={!isReady}
-            style={{
-              '--site-color': site.color,
-              '--site-bg': site.colorBg,
-              '--site-border': site.colorBorder,
-            }}
-          >
-            <div className="pnr-site-emoji">{site.emoji}</div>
-            <div className="pnr-site-info">
-              <span className="pnr-site-name">{site.name}</span>
-              <span className="pnr-site-desc">{site.desc}</span>
-            </div>
-            <ExternalLink size={16} className="pnr-site-arrow" />
-          </button>
-        ))}
+        {PNR_SITES.map((site) => {
+          const wasCopied = copiedId === site.id;
+          return (
+            <button
+              key={site.id}
+              className={`pnr-site-btn ${!isReady ? 'pnr-site-btn--disabled' : ''} ${wasCopied ? 'pnr-site-btn--copied' : ''}`}
+              onClick={() => handleCheck(site)}
+              disabled={!isReady}
+              style={{
+                '--site-color': site.color,
+                '--site-bg': site.colorBg,
+                '--site-border': site.colorBorder,
+              }}
+            >
+              <div className="pnr-site-emoji">{site.emoji}</div>
+              <div className="pnr-site-info">
+                <span className="pnr-site-name">{site.name}</span>
+                <span className="pnr-site-desc">{site.desc}</span>
+              </div>
+              {site.urlFill
+                ? <ExternalLink size={16} className="pnr-site-arrow" />
+                : <Copy size={15} className="pnr-site-arrow" />
+              }
+            </button>
+          );
+        })}
       </div>
 
       {/* Info note */}
       <div className="pnr-info-note">
-        💡 PNR enter karte hi jo site choose karo, wahan tab mein PNR already filled hoga
+        🎫 <strong>ConfirmTkt</strong> pe PNR URL se directly fill hota hai.<br />
+        🏛️ <strong>Indian Railways</strong> aur 🚂 <strong>RailYatri</strong> pe button dabate hi PNR copy ho jaata hai — site khulete hi bas <strong>Ctrl+V</strong> karo ya box mein paste karo.
       </div>
     </div>
   );
