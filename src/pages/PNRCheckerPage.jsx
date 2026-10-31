@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Train, ExternalLink, X, Search, Copy, CheckCheck } from 'lucide-react';
+import { Train, ExternalLink, X, Search, Copy, CheckCheck, AlertCircle } from 'lucide-react';
 
-// ──────────────────────────────────────────────────────────────
-// urlFill  = true  → PNR URL mein directly jaata hai (auto-filled)
-// urlFill  = false → PNR clipboard mein copy hoga, user paste karega
-// ──────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────────────
+// urlFill = true  → PNR URL mein directly jaata hai (WORKS like ConfirmTkt)
+// urlFill = false → Ye sites URL params support nahi karti (govt/old sites)
+//                   Clipboard copy + open karna padega
+// ──────────────────────────────────────────────────────────────────────
 const PNR_SITES = [
   {
     id: 'confirmtkt',
@@ -15,7 +16,32 @@ const PNR_SITES = [
     colorBorder: 'rgba(124, 58, 237, 0.25)',
     getUrl: (pnr) => `https://www.confirmtkt.com/pnr-status/${pnr}`,
     urlFill: true,
-    desc: 'URL se auto-fill • confirm chance bhi dikhata hai',
+    badge: 'Auto-fill ✓',
+    desc: 'Confirm chance bhi dikhata hai',
+  },
+  {
+    id: 'trainman',
+    name: 'Trainman',
+    emoji: '🚄',
+    color: '#DC2626',
+    colorBg: '#FFF1F2',
+    colorBorder: 'rgba(220, 38, 38, 0.25)',
+    getUrl: (pnr) => `https://www.trainman.in/pnr-status/${pnr}`,
+    urlFill: true,
+    badge: 'Auto-fill ✓',
+    desc: 'Coach position + seat info',
+  },
+  {
+    id: 'makemytrip',
+    name: 'MakeMyTrip',
+    emoji: '✈️',
+    color: '#0369A1',
+    colorBg: '#F0F9FF',
+    colorBorder: 'rgba(3, 105, 161, 0.25)',
+    getUrl: (pnr) => `https://www.makemytrip.com/railways/pnr-status/${pnr}/`,
+    urlFill: true,
+    badge: 'Auto-fill ✓',
+    desc: 'Train details + passenger status',
   },
   {
     id: 'indianrail',
@@ -25,26 +51,16 @@ const PNR_SITES = [
     colorBg: '#F0FDF4',
     colorBorder: 'rgba(4, 120, 87, 0.25)',
     getUrl: () => 'https://www.indianrail.gov.in/enquiry/PNR/PnrEnquiry.html?locale=en',
-    urlFill: false,
-    desc: 'PNR copy hoga → site pe paste karo',
-  },
-  {
-    id: 'railyatri',
-    name: 'RailYatri',
-    emoji: '🚂',
-    color: '#0369A1',
-    colorBg: '#F0F9FF',
-    colorBorder: 'rgba(3, 105, 161, 0.25)',
-    getUrl: () => 'https://www.railyatri.in/pnr-status',
-    urlFill: false,
-    desc: 'PNR copy hoga → site pe paste karo',
+    urlFill: false,  // Govt site — URL params support nahi karti
+    badge: 'Paste karo',
+    desc: 'PNR copy hoga → wahan paste karo',
   },
 ];
 
 export default function PNRCheckerPage() {
   const [pnr, setPnr] = useState('');
   const [error, setError] = useState('');
-  const [copiedId, setCopiedId] = useState(null); // which site was just clicked
+  const [copiedId, setCopiedId] = useState(null);
 
   const handleInput = (e) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 10);
@@ -65,14 +81,9 @@ export default function PNRCheckerPage() {
     }
 
     if (!site.urlFill) {
-      // Copy PNR to clipboard, then open site
-      try {
-        await navigator.clipboard.writeText(pnr);
-      } catch {
-        // fallback — still open the site even if clipboard fails
-      }
+      try { await navigator.clipboard.writeText(pnr); } catch {}
       setCopiedId(site.id);
-      setTimeout(() => setCopiedId(null), 3000);
+      setTimeout(() => setCopiedId(null), 4000);
     }
 
     window.open(site.getUrl(pnr), '_blank', 'noopener,noreferrer');
@@ -114,8 +125,6 @@ export default function PNRCheckerPage() {
             </button>
           )}
         </div>
-
-        {/* Counter / error */}
         <div className="pnr-counter-row">
           {error ? (
             <span className="pnr-error">{error}</span>
@@ -128,11 +137,11 @@ export default function PNRCheckerPage() {
         </div>
       </div>
 
-      {/* Clipboard toast */}
+      {/* Clipboard copied toast */}
       {copiedId && (
         <div className="pnr-clipboard-toast">
           <CheckCheck size={15} />
-          PNR <strong>{pnr}</strong> clipboard mein copy ho gaya — site pe <strong>Ctrl+V</strong> / paste karo
+          PNR <strong>{pnr}</strong> copy hua — site pe <strong>Ctrl+V</strong> ya paste karo
         </div>
       )}
 
@@ -159,22 +168,27 @@ export default function PNRCheckerPage() {
             >
               <div className="pnr-site-emoji">{site.emoji}</div>
               <div className="pnr-site-info">
-                <span className="pnr-site-name">{site.name}</span>
+                <div className="pnr-site-name-row">
+                  <span className="pnr-site-name">{site.name}</span>
+                  <span className={`pnr-site-badge ${site.urlFill ? 'pnr-site-badge--auto' : 'pnr-site-badge--copy'}`}>
+                    {site.urlFill ? <ExternalLink size={10} /> : <Copy size={10} />}
+                    {site.badge}
+                  </span>
+                </div>
                 <span className="pnr-site-desc">{site.desc}</span>
               </div>
-              {site.urlFill
-                ? <ExternalLink size={16} className="pnr-site-arrow" />
-                : <Copy size={15} className="pnr-site-arrow" />
-              }
             </button>
           );
         })}
       </div>
 
-      {/* Info note */}
+      {/* Why official site needs paste */}
       <div className="pnr-info-note">
-        🎫 <strong>ConfirmTkt</strong> pe PNR URL se directly fill hota hai.<br />
-        🏛️ <strong>Indian Railways</strong> aur 🚂 <strong>RailYatri</strong> pe button dabate hi PNR copy ho jaata hai — site khulete hi bas <strong>Ctrl+V</strong> karo ya box mein paste karo.
+        <AlertCircle size={13} style={{ flexShrink: 0, marginTop: '2px' }} />
+        <span>
+          <strong>Auto-fill</strong> sirf un sites pe hota hai jinki URL PNR accept karti hai (jaise ConfirmTkt, Trainman).
+          Indian Railways ki government site form-based hai — wahan <strong>URL se fill nahi ho sakta</strong>, isliye PNR clipboard mein copy ho jaata hai.
+        </span>
       </div>
     </div>
   );

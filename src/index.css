@@ -6008,3 +6008,41 @@ input, select, textarea, button {
   border-color: rgba(34, 197, 94, 0.5) !important;
   background: #F0FDF4 !important;
 }
+
+/* -- PNR site name row with badge */
+.pnr-site-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.pnr-site-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
+.pnr-site-badge--auto {
+  background: #DCFCE7;
+  color: #166534;
+  border: 1px solid rgba(34,197,94,0.3);
+}
+
+.pnr-site-badge--copy {
+  background: #FEF9C3;
+  color: #854D0E;
+  border: 1px solid rgba(234,179,8,0.3);
+}
+
+/* -- info note flex fix */
+.pnr-info-note {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
