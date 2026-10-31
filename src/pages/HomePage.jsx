@@ -72,6 +72,21 @@ export default function HomePage() {
           </div>
           <div className="service-card__arrow">›</div>
         </button>
+
+        {/* PNR Checker Card */}
+        <button
+          className="service-card service-card--pnr"
+          onClick={() => navigate('/pnr')}
+        >
+          <div className="service-card__icon-wrap service-card__icon-wrap--pnr">
+            <span className="service-card__emoji">🚆</span>
+          </div>
+          <div className="service-card__body">
+            <h2 className="service-card__title">PNR Status</h2>
+            <p className="service-card__desc">PNR daalo, train status turant dekho</p>
+          </div>
+          <div className="service-card__arrow">›</div>
+        </button>
       </div>
     </div>
   );

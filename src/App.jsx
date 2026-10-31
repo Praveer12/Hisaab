@@ -13,6 +13,7 @@ import CalculatorPage from './pages/CalculatorPage';
 import BackupPage from './pages/BackupPage';
 import CookDashboardPage from './pages/CookDashboardPage';
 import MaidDashboardPage from './pages/MaidDashboardPage';
+import PNRCheckerPage from './pages/PNRCheckerPage';
 import ServiceContactsPage from './pages/ServiceContactsPage';
 
 function App() {
@@ -38,6 +39,9 @@ function App() {
 
             {/* Maid section */}
             <Route path="/maid" element={<MaidDashboardPage />} />
+
+            {/* PNR Checker */}
+            <Route path="/pnr" element={<PNRCheckerPage />} />
 
             {/* Service Contacts */}
             <Route path="/contacts" element={<ServiceContactsPage />} />

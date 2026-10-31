@@ -5737,3 +5737,253 @@ input, select, textarea, button {
   border-color: var(--border-strong);
   color: var(--text-secondary);
 }
+
+/* ============================================================
+   PNR CHECKER PAGE
+   ============================================================ */
+
+/* -- Service card -- PNR (blue/indigo theme) */
+.service-card--pnr {
+  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 60%, #BFDBFE 100%);
+  border: 1.5px solid rgba(59, 130, 246, 0.22);
+}
+
+.service-card--pnr::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -10%;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.service-card__icon-wrap--pnr {
+  background: linear-gradient(135deg, #2563EB, #3B82F6);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+
+/* -- PNR Page Layout */
+.pnr-page {
+  padding: 0 0 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+}
+
+/* -- Header */
+.pnr-header {
+  text-align: center;
+  padding: 1rem 0 0.25rem;
+}
+
+.pnr-header-icon {
+  font-size: 2.75rem;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.pnr-header-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem;
+}
+
+.pnr-header-sub {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* -- Input Card */
+.pnr-input-card {
+  background: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  border: 1.5px solid var(--border-light);
+  box-shadow: var(--shadow-card);
+  padding: 1.125rem 1.125rem 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.pnr-input-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pnr-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.pnr-input {
+  width: 100%;
+  padding: 0.75rem 2.75rem 0.75rem 1rem;
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--border-default);
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.12em;
+  color: var(--text-primary);
+  background: var(--bg-surface-raised);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  outline: none;
+}
+
+.pnr-input:focus {
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  background: #fff;
+}
+
+.pnr-input--error {
+  border-color: #EF4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.pnr-input--ready {
+  border-color: #22C55E;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+}
+
+.pnr-clear-btn {
+  position: absolute;
+  right: 0.75rem;
+  background: var(--bg-surface-overlay);
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.pnr-clear-btn:hover {
+  background: var(--border-default);
+  color: var(--text-primary);
+}
+
+.pnr-counter-row {
+  min-height: 1.2rem;
+}
+
+.pnr-counter {
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.pnr-counter--ready {
+  color: #16A34A;
+  font-weight: 700;
+}
+
+.pnr-error {
+  font-size: 0.8rem;
+  color: #DC2626;
+  font-weight: 600;
+}
+
+/* -- Sites label */
+.pnr-sites-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0 0.25rem;
+}
+
+/* -- Site buttons list */
+.pnr-sites-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.pnr-site-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius-xl);
+  border: 1.5px solid var(--site-border, var(--border-default));
+  background: var(--site-bg, var(--bg-surface));
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  box-shadow: var(--shadow-card);
+}
+
+.pnr-site-btn:not(.pnr-site-btn--disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+.pnr-site-btn:not(.pnr-site-btn--disabled):active {
+  transform: scale(0.97);
+}
+
+.pnr-site-btn--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pnr-site-emoji {
+  font-size: 1.75rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.pnr-site-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.pnr-site-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--site-color, var(--text-primary));
+}
+
+.pnr-site-desc {
+  font-size: 0.775rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.pnr-site-arrow {
+  color: var(--site-color, var(--text-tertiary));
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+/* -- Info note */
+.pnr-info-note {
+  background: #FFFBEB;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  border-radius: var(--radius-lg);
+  padding: 0.75rem 1rem;
+  font-size: 0.8rem;
+  color: #92400E;
+  line-height: 1.5;
+}
