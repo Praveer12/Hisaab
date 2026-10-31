@@ -6292,3 +6292,169 @@ input, select, textarea, button {
 
 .pnr-history-refresh:hover { color: #2563EB; background: #EFF6FF; }
 .pnr-history-del:hover     { color: #DC2626; background: #FFF1F2; }
+
+/* -- PNR Result Card Enhancements ----------------------------- */
+.pnr-result-cls {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pnr-result-timing {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.1rem;
+}
+
+.pnr-chart-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.pnr-chart-badge--yes {
+  background: #DCFCE7;
+  color: #166534;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.pnr-chart-badge--no {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.pnr-passenger-seat {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ps-color);
+  opacity: 0.9;
+}
+
+/* -- PNR API Key Hint & Panel --------------------------------- */
+.pnr-apikey-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  padding: 0.4rem 0.2rem 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #059669;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: opacity 0.15s;
+}
+
+.pnr-apikey-hint:hover {
+  opacity: 0.8;
+}
+
+.pnr-apikey-panel {
+  background: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  border: 1.5px solid var(--border-light);
+  box-shadow: var(--shadow-card);
+  padding: 1rem 1.125rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  animation: fadeIn 0.18s ease;
+}
+
+.pnr-apikey-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pnr-apikey-desc {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.pnr-apikey-desc code {
+  background: var(--bg-surface-raised);
+  padding: 0.1rem 0.3rem;
+  border-radius: var(--radius-sm);
+  font-family: monospace;
+}
+
+.pnr-apikey-input-row {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.pnr-apikey-input {
+  width: 100%;
+  padding: 0.55rem 2.2rem 0.55rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-default);
+  font-size: 0.82rem;
+  font-family: monospace;
+  background: var(--bg-surface-raised);
+  outline: none;
+}
+
+.pnr-apikey-input:focus {
+  border-color: #2563EB;
+}
+
+.pnr-apikey-eye {
+  position: absolute;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  padding: 0.2rem;
+}
+
+.pnr-apikey-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-md);
+  border: none;
+  background: #2563EB;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.pnr-apikey-save--done {
+  background: #16A34A !important;
+}
+
+.pnr-apikey-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.8rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface-raised);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
