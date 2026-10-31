@@ -18,14 +18,16 @@ export default function HomePage() {
           className="service-card service-card--milk"
           onClick={() => navigate('/milk')}
         >
-          <div className="service-card__icon-wrap service-card__icon-wrap--milk">
-            <span className="service-card__emoji">🥛</span>
+          <div className="service-card__top">
+            <div className="service-card__icon-wrap service-card__icon-wrap--milk">
+              <span className="service-card__emoji">🥛</span>
+            </div>
+            <span className="service-card__arrow">›</span>
           </div>
           <div className="service-card__body">
             <h2 className="service-card__title">Doodh</h2>
-            <p className="service-card__desc">Roz ka hisaab, monthly bill, providers</p>
+            <p className="service-card__desc">Roz ka hisaab & bill</p>
           </div>
-          <div className="service-card__arrow">›</div>
         </button>
 
         {/* Cook Card */}
@@ -33,14 +35,16 @@ export default function HomePage() {
           className="service-card service-card--cook"
           onClick={() => navigate('/cook')}
         >
-          <div className="service-card__icon-wrap service-card__icon-wrap--cook">
-            <span className="service-card__emoji">👨‍🍳</span>
+          <div className="service-card__top">
+            <div className="service-card__icon-wrap service-card__icon-wrap--cook">
+              <span className="service-card__emoji">👨‍🍳</span>
+            </div>
+            <span className="service-card__arrow">›</span>
           </div>
           <div className="service-card__body">
             <h2 className="service-card__title">Cook</h2>
-            <p className="service-card__desc">Mahine ka hisaab, paid ya unpaid</p>
+            <p className="service-card__desc">Haazri aur hisaab</p>
           </div>
-          <div className="service-card__arrow">›</div>
         </button>
 
         {/* Maid Card */}
@@ -48,14 +52,16 @@ export default function HomePage() {
           className="service-card service-card--maid"
           onClick={() => navigate('/maid')}
         >
-          <div className="service-card__icon-wrap service-card__icon-wrap--maid">
-            <span className="service-card__emoji">🧹</span>
+          <div className="service-card__top">
+            <div className="service-card__icon-wrap service-card__icon-wrap--maid">
+              <span className="service-card__emoji">🧹</span>
+            </div>
+            <span className="service-card__arrow">›</span>
           </div>
           <div className="service-card__body">
             <h2 className="service-card__title">Maid</h2>
-            <p className="service-card__desc">Mahine ka hisaab, paid ya unpaid</p>
+            <p className="service-card__desc">Haazri aur hisaab</p>
           </div>
-          <div className="service-card__arrow">›</div>
         </button>
 
         {/* Service Contacts Card */}
@@ -63,19 +69,21 @@ export default function HomePage() {
           className="service-card service-card--contacts"
           onClick={() => navigate('/contacts')}
         >
-          <div className="service-card__icon-wrap service-card__icon-wrap--contacts">
-            <span className="service-card__emoji">📇</span>
+          <div className="service-card__top">
+            <div className="service-card__icon-wrap service-card__icon-wrap--contacts">
+              <span className="service-card__emoji">📇</span>
+            </div>
+            <span className="service-card__arrow">›</span>
           </div>
           <div className="service-card__body">
-            <h2 className="service-card__title">Service Contacts</h2>
-            <p className="service-card__desc">Electrician, plumber, maid ke numbers</p>
+            <h2 className="service-card__title">Contacts</h2>
+            <p className="service-card__desc">Plumber, electrician</p>
           </div>
-          <div className="service-card__arrow">›</div>
         </button>
 
-        {/* PNR Checker Card */}
+        {/* PNR Checker Card (Wide card spanning both columns) */}
         <button
-          className="service-card service-card--pnr"
+          className="service-card service-card--pnr service-card--wide"
           onClick={() => navigate('/pnr')}
         >
           <div className="service-card__icon-wrap service-card__icon-wrap--pnr">
@@ -83,7 +91,7 @@ export default function HomePage() {
           </div>
           <div className="service-card__body">
             <h2 className="service-card__title">PNR Status</h2>
-            <p className="service-card__desc">PNR daalo, train status turant dekho</p>
+            <p className="service-card__desc">Train status aur seat info live dekho</p>
           </div>
           <div className="service-card__arrow">›</div>
         </button>
@@ -91,4 +99,3 @@ export default function HomePage() {
     </div>
   );
 }
-
