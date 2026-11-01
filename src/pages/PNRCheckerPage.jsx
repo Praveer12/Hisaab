@@ -83,12 +83,24 @@ function getStationStr(st) {
 }
 
 // ── Helper to extract Coach, Seat, Berth Type from any shape ────
-function extractSeatInfo(p) {
+function extractSeatInfo(p, resp = {}) {
   if (!p) return { coach: '', seat: '', berthType: '' };
 
-  let coach = p.coach || p.currentCoach || p.bookingCoach || p.coachId || p.coachPosition || '';
-  let seat  = p.seat || p.seatNo || p.seat_no || p.seatNumber || p.berthNo || p.berth_no || p.currentBerthNo || '';
-  let berthType = p.berth || p.berthType || p.berth_type || p.berthCode || '';
+  let coach = (
+    p.coach || p.coachNo || p.coach_no || p.coachName || p.coach_name ||
+    p.currentCoach || p.current_coach || p.bookingCoach || p.booking_coach ||
+    p.allocatedCoach || p.allottedCoach || p.coachId || p.coach_id ||
+    p.coachPosition || p.coach_position || p.bCoach || p.cCoach || ''
+  );
+
+  let seat = (
+    p.seat || p.seatNo || p.seat_no || p.seatNumber || p.seat_number ||
+    p.berthNo || p.berth_no || p.berthNumber || p.berth_number ||
+    p.currentBerthNo || p.currentSeatNo || p.current_berth_no || p.current_seat_no ||
+    p.allottedSeat || p.allocatedSeat || p.seatCode || ''
+  );
+
+  let berthType = p.berth || p.berthType || p.berth_type || p.berthCode || p.berth_code || '';
 
   // If berth is a number, treat it as seat!
   if (!seat && berthType && /^\d+$/.test(String(berthType).trim())) {
@@ -96,22 +108,69 @@ function extractSeatInfo(p) {
     berthType = '';
   }
 
-  // Check if raw format like "CNF/S4/65/LB" or "S4, 65, LB" exists in any status text
-  const combinedText = [p.currentStatus, p.bookingStatus, p.raw, p.currentStatusNew]
-    .filter(Boolean)
-    .join(' ');
-
-  if (!seat || !coach) {
-    // Pattern: S4/65/LB or S4, 65, LB or B1 45 MB or S4-65
-    const match = combinedText.match(/([A-Z]\d+)[,\/\s\-]+(\d+)(?:[,\/\s\-]+([A-Za-z]+))?/i);
-    if (match) {
-      if (!coach) coach = match[1].toUpperCase();
-      if (!seat) seat = match[2];
-      if (match[3] && !berthType) berthType = match[3].toUpperCase();
+  // Scan any string property of p for standalone coach code like "B5", "S4"
+  if (!coach) {
+    for (const [k, v] of Object.entries(p)) {
+      if (typeof v === 'string') {
+        const trimmed = v.trim();
+        if (/^[A-HJ-KM-NP-Z]{1,2}\d{1,2}$/i.test(trimmed) && !/^(WL|RL|GN|PQ|RS|RAC|CNF|CAN)$/i.test(trimmed)) {
+          coach = trimmed.toUpperCase();
+          break;
+        }
+      }
     }
   }
 
-  return { coach, seat, berthType };
+  // Scan all string & number fields in p combined
+  const combinedText = Object.values(p)
+    .filter(v => typeof v === 'string' || typeof v === 'number')
+    .map(String)
+    .join(' ');
+
+  // Look for Coach code anywhere in text: e.g. B5, S4, A1, M2, C1, H1
+  if (!coach) {
+    const coachMatches = combinedText.match(/\b([A-HJ-KM-NP-Z]{1,2}\d{1,2})\b/gi);
+    if (coachMatches) {
+      const validCoach = coachMatches.find(c => !/^(WL|RL|GN|PQ|RS|RAC|CNF|CAN|D\d{3}|P\d+)$/i.test(c));
+      if (validCoach) coach = validCoach.toUpperCase();
+    }
+  }
+
+  // Look for Seat number in text if missing:
+  if (!seat) {
+    if (coach) {
+      const afterCoach = new RegExp(`${coach}[,\\/\\s\\-]+(\\d{1,3})`, 'i').exec(combinedText);
+      const beforeCoach = new RegExp(`(\\d{1,3})[,\\/\\s\\-]+${coach}`, 'i').exec(combinedText);
+      if (afterCoach) {
+        seat = afterCoach[1];
+      } else if (beforeCoach) {
+        seat = beforeCoach[1];
+      }
+    }
+
+    if (!seat) {
+      const racMatch = combinedText.match(/\b(?:RAC|CNF|WL|SEAT)[,\/\s\-]+(\d{1,3})\b/i);
+      if (racMatch) seat = racMatch[1];
+    }
+  }
+
+  // Parent fallback: if coach still not found, check resp
+  if (!coach && resp) {
+    const parentCoach = (
+      resp.coach || resp.coachNo || resp.coach_no || resp.coachName || resp.coach_name ||
+      resp.coachPosition || resp.coach_position || resp.currentCoach || resp.allottedCoach
+    );
+    if (parentCoach && typeof parentCoach === 'string') {
+      const parentMatch = parentCoach.match(/\b([A-HJ-KM-NP-Z]{1,2}\d{1,2})\b/i);
+      if (parentMatch) coach = parentMatch[1].toUpperCase();
+    }
+  }
+
+  return {
+    coach: String(coach || '').trim(),
+    seat: String(seat || '').trim(),
+    berthType: String(berthType || '').trim()
+  };
 }
 
 // ── Result Card ────────────────────────────────────────────────
@@ -214,11 +273,11 @@ function PNRResultCard({ pnr, result, onDelete }) {
           {passengers.map((p, i) => {
             const current = p.currentStatus || p.CurrentStatus || p.bookingStatus || '—';
             const booked  = p.bookingStatus  || p.BookingStatus  || '';
-            const seatInfo = extractSeatInfo(p);
+            const seatInfo = extractSeatInfo(p, resp);
             const style   = getStatusStyle(current);
             const pNum    = p.passengerSerialNumber || p.number || p.Number || p.passengerNumber || i + 1;
 
-            const hasCoachOrSeat = Boolean(seatInfo.coach || seatInfo.seat);
+            const hasCoachOrSeat = Boolean(seatInfo.coach || seatInfo.seat || seatInfo.berthType);
 
             return (
               <div
@@ -236,14 +295,18 @@ function PNRResultCard({ pnr, result, onDelete }) {
 
                     {hasCoachOrSeat ? (
                       <span className="pnr-passenger-seat-pill">
-                        {seatInfo.coach ? `Coach: ${seatInfo.coach}` : ''}
-                        {seatInfo.coach && seatInfo.seat ? ' · ' : ''}
-                        {seatInfo.seat ? `Seat: ${seatInfo.seat}` : ''}
-                        {seatInfo.berthType ? ` (${seatInfo.berthType})` : ''}
-                      </span>
-                    ) : seatInfo.berthType ? (
-                      <span className="pnr-passenger-seat-pill">
-                        {seatInfo.berthType}
+                        {seatInfo.coach ? (
+                          <strong className="pnr-coach-badge">Coach: {seatInfo.coach}</strong>
+                        ) : null}
+                        {seatInfo.coach && seatInfo.seat ? (
+                          <span style={{ opacity: 0.4 }}>·</span>
+                        ) : null}
+                        {seatInfo.seat ? (
+                          <span>Seat: {seatInfo.seat}</span>
+                        ) : null}
+                        {seatInfo.berthType ? (
+                          <span style={{ opacity: 0.85 }}>({seatInfo.berthType})</span>
+                        ) : null}
                       </span>
                     ) : null}
                   </div>

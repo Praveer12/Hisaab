@@ -6562,3 +6562,10 @@ input, select, textarea, button {
   align-items: center;
   gap: 0.25rem;
 }
+
+/* -- PNR Coach Badge Style ----------------------------------- */
+.pnr-coach-badge {
+  font-weight: 800;
+  color: #065F46;
+  letter-spacing: 0.02em;
+}
