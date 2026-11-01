@@ -6548,3 +6548,17 @@ input, select, textarea, button {
 .service-card--wide .service-card__arrow {
   font-size: 1.6rem !important;
 }
+
+/* -- PNR Seat Pill Badge -------------------------------------- */
+.pnr-passenger-seat-pill {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #065F46;
+  background: #ECFDF5;
+  border: 1px solid rgba(5, 150, 105, 0.3);
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}

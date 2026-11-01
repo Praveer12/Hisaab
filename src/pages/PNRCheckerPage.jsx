@@ -71,6 +71,49 @@ function timeAgo(iso) {
   return `${Math.floor(hrs / 24)} din pehle`;
 }
 
+// ── Helper to format station whether string or object ───────────
+function getStationStr(st) {
+  if (!st) return '';
+  if (typeof st === 'string') return st;
+  if (typeof st === 'object') {
+    if (st.name && st.code) return `${st.name} (${st.code})`;
+    return st.name || st.code || st.stationName || '';
+  }
+  return String(st);
+}
+
+// ── Helper to extract Coach, Seat, Berth Type from any shape ────
+function extractSeatInfo(p) {
+  if (!p) return { coach: '', seat: '', berthType: '' };
+
+  let coach = p.coach || p.currentCoach || p.bookingCoach || p.coachId || p.coachPosition || '';
+  let seat  = p.seat || p.seatNo || p.seat_no || p.seatNumber || p.berthNo || p.berth_no || p.currentBerthNo || '';
+  let berthType = p.berth || p.berthType || p.berth_type || p.berthCode || '';
+
+  // If berth is a number, treat it as seat!
+  if (!seat && berthType && /^\d+$/.test(String(berthType).trim())) {
+    seat = String(berthType).trim();
+    berthType = '';
+  }
+
+  // Check if raw format like "CNF/S4/65/LB" or "S4, 65, LB" exists in any status text
+  const combinedText = [p.currentStatus, p.bookingStatus, p.raw, p.currentStatusNew]
+    .filter(Boolean)
+    .join(' ');
+
+  if (!seat || !coach) {
+    // Pattern: S4/65/LB or S4, 65, LB or B1 45 MB or S4-65
+    const match = combinedText.match(/([A-Z]\d+)[,\/\s\-]+(\d+)(?:[,\/\s\-]+([A-Za-z]+))?/i);
+    if (match) {
+      if (!coach) coach = match[1].toUpperCase();
+      if (!seat) seat = match[2];
+      if (match[3] && !berthType) berthType = match[3].toUpperCase();
+    }
+  }
+
+  return { coach, seat, berthType };
+}
+
 // ── Result Card ────────────────────────────────────────────────
 function PNRResultCard({ pnr, result, onDelete }) {
   const resp = result?.data?.data || result?.data?.pnrResponse || result?.data;
@@ -78,8 +121,10 @@ function PNRResultCard({ pnr, result, onDelete }) {
 
   const trainNo   = resp.trainNo || resp.trainNumber || resp.TrainNo || resp.TrainNumber || '';
   const trainName = resp.trainName || resp.TrainName || 'Train';
-  const from      = resp.sourceStation || resp.sourceStationName || resp.sourceName || resp.from || resp.From || '—';
-  const to        = resp.destinationStation || resp.destinationStationName || resp.destinationName || resp.to || resp.To || '—';
+
+  const from = getStationStr(resp.sourceStation || resp.sourceStationName || resp.sourceName || resp.from || resp.From) || '—';
+  const to   = getStationStr(resp.destinationStation || resp.destinationStationName || resp.destinationName || resp.to || resp.To) || '—';
+
   const doj       = resp.journeyDate || resp.dateOfJourney || resp.doj || resp.DateOfJourney || resp.Doj || '';
   const travelCls = resp.travelClass || resp.class || resp.Class || '';
 
@@ -88,10 +133,37 @@ function PNRResultCard({ pnr, result, onDelete }) {
     ? chartVal.toLowerCase().includes('prepared') && !chartVal.toLowerCase().includes('not')
     : Boolean(chartVal);
 
-  const depTime   = resp.departureTime || '';
-  const arrTime   = resp.arrivalTime || '';
+  const depTime   = resp.departureTime || resp.from?.time || '';
+  const arrTime   = resp.arrivalTime || resp.to?.time || '';
 
-  const passengers = resp.passengers || resp.passengerStatus || resp.PassengerStatus || resp.PassengerList || [];
+  // Extract passenger list from all common shapes
+  let passengers = [];
+  if (Array.isArray(resp.passengers)) {
+    passengers = resp.passengers;
+  } else if (Array.isArray(resp.passengerStatus)) {
+    passengers = resp.passengerStatus;
+  } else if (Array.isArray(resp.PassengerStatus)) {
+    passengers = resp.PassengerStatus;
+  } else if (Array.isArray(resp.PassengerList)) {
+    passengers = resp.PassengerList;
+  } else if (Array.isArray(resp.passengerList)) {
+    passengers = resp.passengerList;
+  } else if (Array.isArray(resp.passenger_list)) {
+    passengers = resp.passenger_list;
+  } else if (Array.isArray(resp.passengerDetails)) {
+    passengers = resp.passengerDetails;
+  } else if (Array.isArray(resp.PassengerDetails)) {
+    passengers = resp.PassengerDetails;
+  } else if (Array.isArray(resp.passenger)) {
+    passengers = resp.passenger;
+  } else if (Array.isArray(resp.Passenger)) {
+    passengers = resp.Passenger;
+  } else {
+    const anyArr = Object.values(resp).find(v =>
+      Array.isArray(v) && v.length > 0 && typeof v[0] === 'object' && v[0] !== null
+    );
+    if (anyArr) passengers = anyArr;
+  }
 
   return (
     <div className="pnr-result-card">
@@ -142,10 +214,11 @@ function PNRResultCard({ pnr, result, onDelete }) {
           {passengers.map((p, i) => {
             const current = p.currentStatus || p.CurrentStatus || p.bookingStatus || '—';
             const booked  = p.bookingStatus  || p.BookingStatus  || '';
-            const coach   = p.coach || p.bookingCoach || p.currentCoach || '';
-            const berth   = p.berth || p.bookingBerth || p.currentBerthNo || p.berthNumber || '';
-            const pNum    = p.passengerSerialNumber || p.number || p.Number || p.passengerNumber || i + 1;
+            const seatInfo = extractSeatInfo(p);
             const style   = getStatusStyle(current);
+            const pNum    = p.passengerSerialNumber || p.number || p.Number || p.passengerNumber || i + 1;
+
+            const hasCoachOrSeat = Boolean(seatInfo.coach || seatInfo.seat);
 
             return (
               <div
@@ -158,14 +231,23 @@ function PNRResultCard({ pnr, result, onDelete }) {
                 </span>
 
                 <div className="pnr-passenger-status">
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
                     <span className="pnr-passenger-current">{current}</span>
-                    {(coach || berth) && (
-                      <span className="pnr-passenger-seat">
-                        ({coach ? `Coach: ${coach}` : ''}{coach && berth ? ', ' : ''}{berth ? `Berth: ${berth}` : ''})
+
+                    {hasCoachOrSeat ? (
+                      <span className="pnr-passenger-seat-pill">
+                        {seatInfo.coach ? `Coach: ${seatInfo.coach}` : ''}
+                        {seatInfo.coach && seatInfo.seat ? ' · ' : ''}
+                        {seatInfo.seat ? `Seat: ${seatInfo.seat}` : ''}
+                        {seatInfo.berthType ? ` (${seatInfo.berthType})` : ''}
                       </span>
-                    )}
+                    ) : seatInfo.berthType ? (
+                      <span className="pnr-passenger-seat-pill">
+                        {seatInfo.berthType}
+                      </span>
+                    ) : null}
                   </div>
+
                   {booked && booked !== current && (
                     <span className="pnr-passenger-booked">Booked: {booked}</span>
                   )}
@@ -318,6 +400,7 @@ export default function PNRCheckerPage() {
       }
 
       const json = await res.json();
+      console.log('PNR API Response:', json);
 
       if (json.success === false) {
         setFetchErr(json.message || 'PNR Status nahi mila.');
