@@ -5,9 +5,9 @@ import {
   Key, Eye, EyeOff, Settings, Check, Calendar, MapPin
 } from 'lucide-react';
 
-// ── Default RapidAPI key ─────────────────────────────────────────
+// ── Default RapidAPI config ──────────────────────────────────────
 const DEFAULT_API_KEY = '1227072abfmshe6bd6083e17ab60p1b350ejsn771ebd1d7efd';
-const API_HOST        = 'irctc-api9.p.rapidapi.com';
+const API_HOST        = 'irctc-indian-railway-pnr-status.p.rapidapi.com';
 
 // ── localStorage helpers ────────────────────────────────────────
 const LS_HISTORY  = 'hisaab_pnr_history';
@@ -73,20 +73,25 @@ function timeAgo(iso) {
 
 // ── Result Card ────────────────────────────────────────────────
 function PNRResultCard({ pnr, result, onDelete }) {
-  const resp = result?.data?.pnrResponse || result?.data?.data?.pnrResponse || result?.data;
+  const resp = result?.data?.data || result?.data?.pnrResponse || result?.data;
   if (!resp) return null;
 
-  const trainNo   = resp.trainNo || resp.TrainNo || resp.TrainNumber || '';
+  const trainNo   = resp.trainNo || resp.trainNumber || resp.TrainNo || resp.TrainNumber || '';
   const trainName = resp.trainName || resp.TrainName || 'Train';
-  const from      = resp.sourceName || resp.from || resp.From || '—';
-  const to        = resp.destinationName || resp.to || resp.To || '—';
-  const doj       = resp.doj || resp.DateOfJourney || resp.Doj || '';
-  const travelCls = resp.class || resp.Class || '';
-  const chartPrep = resp.chartPrepared ?? false;
+  const from      = resp.sourceStation || resp.sourceStationName || resp.sourceName || resp.from || resp.From || '—';
+  const to        = resp.destinationStation || resp.destinationStationName || resp.destinationName || resp.to || resp.To || '—';
+  const doj       = resp.journeyDate || resp.dateOfJourney || resp.doj || resp.DateOfJourney || resp.Doj || '';
+  const travelCls = resp.travelClass || resp.class || resp.Class || '';
+
+  const chartVal  = resp.chartStatus || resp.chartPrepared;
+  const chartPrep = typeof chartVal === 'string'
+    ? chartVal.toLowerCase().includes('prepared') && !chartVal.toLowerCase().includes('not')
+    : Boolean(chartVal);
+
   const depTime   = resp.departureTime || '';
   const arrTime   = resp.arrivalTime || '';
 
-  const passengers = resp.passengerStatus || resp.PassengerStatus || resp.PassengerList || [];
+  const passengers = resp.passengers || resp.passengerStatus || resp.PassengerStatus || resp.PassengerList || [];
 
   return (
     <div className="pnr-result-card">
@@ -137,8 +142,9 @@ function PNRResultCard({ pnr, result, onDelete }) {
           {passengers.map((p, i) => {
             const current = p.currentStatus || p.CurrentStatus || p.bookingStatus || '—';
             const booked  = p.bookingStatus  || p.BookingStatus  || '';
-            const coach   = p.coach || p.bookingCoach || '';
-            const berth   = p.berth || p.bookingBerth || '';
+            const coach   = p.coach || p.bookingCoach || p.currentCoach || '';
+            const berth   = p.berth || p.bookingBerth || p.currentBerthNo || p.berthNumber || '';
+            const pNum    = p.passengerSerialNumber || p.number || p.Number || p.passengerNumber || i + 1;
             const style   = getStatusStyle(current);
 
             return (
@@ -148,7 +154,7 @@ function PNRResultCard({ pnr, result, onDelete }) {
                 style={{ '--ps-bg': style.bg, '--ps-color': style.color, '--ps-border': style.border }}
               >
                 <span className="pnr-passenger-num">
-                  P{p.number || p.Number || i + 1}
+                  P{pNum}
                 </span>
 
                 <div className="pnr-passenger-status">
@@ -201,7 +207,7 @@ function ApiKeyPanel({ apiKey, onSave }) {
       <div className="pnr-apikey-title"><Key size={14} /> RapidAPI Key Settings</div>
       <p className="pnr-apikey-desc">
         Host: <code>{API_HOST}</code><br />
-        Default key already configured hai. Agar apni key use karni ho toh yahan update kar sakte ho.
+        Default key already configured hai.
       </p>
       <div className="pnr-apikey-input-row">
         <input
@@ -291,40 +297,38 @@ export default function PNRCheckerPage() {
 
     try {
       const keyToUse = apiKey || DEFAULT_API_KEY;
-      const formData = new FormData();
-      formData.append('pnr', target);
 
-      const res = await fetch(`https://${API_HOST}/pnr-status.php`, {
-        method: 'POST',
+      const res = await fetch(`https://${API_HOST}/getPNRStatus/${target}`, {
+        method: 'GET',
         headers: {
-          'X-RapidAPI-Key': keyToUse,
-          'X-RapidAPI-Host': API_HOST,
+          'x-rapidapi-key': keyToUse,
+          'x-rapidapi-host': API_HOST,
         },
-        body: formData,
       });
 
       if (res.status === 403 || res.status === 401) {
-        setFetchErr('RapidAPI key invalid ya expired hai. Settings mein check karo.');
+        setFetchErr('RapidAPI key invalid ya unsubscribed hai. Settings mein check karo.');
         setFetching(false);
         return;
       }
       if (res.status === 429) {
-        setFetchErr('Rate limit hit ho gayi. Kripya thodi der baad try karo.');
+        setFetchErr('RapidAPI rate limit hit ho gayi. Kripya thodi der baad try karo.');
         setFetching(false);
         return;
       }
 
       const json = await res.json();
-      const pnrData = json?.data?.pnrResponse || json?.data || json;
 
-      if (pnrData?.error) {
-        setFetchErr(pnrData.error);
+      if (json.success === false) {
+        setFetchErr(json.message || 'PNR Status nahi mila.');
         setFetching(false);
         return;
       }
 
-      if (!pnrData || (!pnrData.trainNo && !pnrData.trainName && !pnrData.passengerStatus)) {
-        setFetchErr('PNR data nahi mila ya flushed ho gaya hai.');
+      const pnrData = json?.data?.pnrResponse || json?.data || json;
+
+      if (pnrData?.error || pnrData?.message) {
+        setFetchErr(pnrData.error || pnrData.message);
         setFetching(false);
         return;
       }
